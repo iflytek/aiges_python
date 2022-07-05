@@ -32,8 +32,29 @@
 #  Vestibulum commodo. Ut rhoncus gravida arcu.
 import sys
 
-if not hasattr(sys, 'argv'):
-    sys.argv = ['']
+from proto import *
+
+
+class UserRequest(object):
+    params1 = StringParamField(key="p1", enums=["3", "eee"])
+    params2 = StringParamField(key="p2", maxLength=44, required=True)
+    params3 = StringParamField(key="p3", maxLength=44, required=False)
+
+    input1 = ImageBodyField(key="data", path="./1.png")
+    input3 = ImageBodyField(key="data2", path="./1.png")
+    input2 = StringBodyField(key="switch", value="hh")
+
+
+class UserResponse(object):
+    accept1 = StringBodyField(key="boxes")
+
+
+class Metadata(AseProto):
+    serviceId = "mmocr"
+    version = "v2.0"
+    requestCls = UserRequest()
+    responseCls = UserResponse()
+
 
 '''
 服务初始化
@@ -110,39 +131,10 @@ def wrapperError(ret: int) -> str:
     return ""
 
 
-class InputField(object):
-    def __init__(self, key, dataType="string", max=None, min=None, choices=[]):
-        self.data_type = dataType
-        self.key = key
-        if max != None:
-            self.max = None
-        if min != None:
-            self.min = None
-        if choices != []:
-            self.choices = None
-
-
-from proto import  AseProto,StringField
-
-class UserRequest(object):
-    input1 = StringField("image", key="data", path="./1xml")
-    input2 = StringField("string", key="switch")
-
-
-class UserResponse(object):
-    accept1 = StringField("string", key="boxes")
-
-
-class Metadata(AseProto):
-    serviceId = "mmocr"
-    version = "v2.0"
-    call = "atmos"
-    requestCls = UserRequest()
-    responseCls = UserResponse()
-
 def run():
     exec()
 
+
 if __name__ == '__main__':
     m = Metadata()
-    print(m.schema())
+    m.schema()
