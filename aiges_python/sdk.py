@@ -334,7 +334,7 @@ class Metaclass(type):
         return type.__new__(cls, name, bases, attrs)
 
 
-class AseProto(metaclass=Metaclass):
+class AIserviceManager(metaclass=Metaclass):
     def schema(self):
         s = Template(tpl)
         kwargs = self._parse_mapping()
@@ -571,3 +571,4 @@ class AseProto(metaclass=Metaclass):
                 }
             }
         }
+

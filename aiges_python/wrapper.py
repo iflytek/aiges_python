@@ -1,7 +1,81 @@
+#!/usr/bin/env python
+# coding:utf-8
+""" 
+@author: nivic ybyang7
+@license: Apache Licence 
+@file: wrapper.py
+@time: 2022/06/16
+@contact: ybyang7@iflytek.com
+@site:  
+@software: PyCharm 
 
-import sys 
-if not hasattr(sys, 'argv'):
-    sys.argv  = ['']
+# code is far away from bugs with the god animal protecting
+    I love animals. They taste delicious.
+              ┏┓      ┏┓
+            ┏┛┻━━━┛┻┓
+            ┃      ☃      ┃
+            ┃  ┳┛  ┗┳  ┃
+            ┃      ┻      ┃
+            ┗━┓      ┏━┛
+                ┃      ┗━━━┓
+                ┃  神兽保佑    ┣┓
+                ┃　永无BUG！   ┏┛
+                ┗┓┓┏━┳┓┏┛
+                  ┃┫┫  ┃┫┫
+                  ┗┻┛  ┗┻┛ 
+"""
+
+#  Copyright (c) 2022. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+#  Morbi non lorem porttitor neque feugiat blandit. Ut vitae ipsum eget quam lacinia accumsan.
+#  Etiam sed turpis ac ipsum condimentum fringilla. Maecenas magna.
+#  Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
+#  Vestibulum commodo. Ut rhoncus gravida arcu.
+import sys
+
+from sdk import AIserviceManager, \
+    StringParamField, \
+    ImageBodyField, \
+    StringBodyField
+
+'''
+定义请求类:
+ params:  params 开头的属性代表最终HTTP协议中的功能参数parameters部分， 
+          params Field支持 StringParamField，
+          NumberParamField，BooleanParamField,IntegerParamField，每个字段均支持枚举
+          params 属性多用于协议中的控制字段，请求body字段不属于params范畴
+          
+ input:    input字段多用与请求数据段，即body部分，当前支持 ImageBodyField, StringBodyField, 和AudioBodyField
+'''
+
+
+class UserRequest(object):
+    params1 = StringParamField(key="p1", enums=["3", "eee"])
+    params2 = StringParamField(key="p2", maxLength=44, required=True)
+    params3 = StringParamField(key="p3", maxLength=44, required=False)
+
+    input1 = ImageBodyField(key="data", path="test.png")
+    input3 = ImageBodyField(key="data2", path="test.png")
+    input2 = StringBodyField(key="switch", value="")
+
+
+'''
+定义响应类:
+ accepts:  accepts代表响应中包含哪些字段, 以及数据类型
+
+ input:    input字段多用与请求数据段，即body部分，当前支持 ImageBodyField, StringBodyField, 和AudioBodyField
+'''
+
+
+class UserResponse(object):
+    accept1 = StringBodyField(key="boxes")
+    accept2 = StringBodyField(key="boxes2")
+
+
+class Manager(AIserviceManager):
+    serviceId = "mmocr"
+    version = "backup.0"
+    requestCls = UserRequest()
+    responseCls = UserResponse()
 
 
 '''
@@ -13,6 +87,8 @@ if not hasattr(sys, 'argv'):
 @return
     ret: 错误码。无错误时返回0
 '''
+
+
 def wrapperInit(config: {}) -> int:
     return 0
 
@@ -23,8 +99,11 @@ def wrapperInit(config: {}) -> int:
 @return
     ret:错误码。无错误码时返回0
 '''
+
+
 def wrapperFini() -> int:
     return 0
+
 
 '''
 非会话模式计算接口,对应oneShot请求,可能存在并发调用
@@ -40,7 +119,9 @@ def wrapperFini() -> int:
     reqDat
     ret:错误码。无错误码时返回0
 '''
-def wrapperOnceExec(usrTag:str,params:{},reqData:[],respData:[],psrIds:[],psrCnt:int) -> int:
+
+
+def wrapperOnceExec(usrTag: str, params: {}, reqData: [], respData: [], psrIds: [], psrCnt: int) -> int:
     print("hello world")
     print(usrTag)
     print(params)
@@ -66,7 +147,16 @@ def wrapperDestroy(handle: str) -> int:
     return 0
 
 
-def wrapperError(ret:int)->str:
-    if ret==100:
+def wrapperError(ret: int) -> str:
+    if ret == 100:
         return "this is a tese error return"
     return ""
+
+
+def run():
+    exec()
+
+
+if __name__ == '__main__':
+    m = Manager()
+    m.schema()
