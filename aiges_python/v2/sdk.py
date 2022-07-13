@@ -189,11 +189,12 @@ class ImageBodyField(Field):
 
 
 class StringParamField(Field):
-    def __init__(self, key, minLength=0, maxLength=50, enums=[], required=False):
+    def __init__(self, key, minLength=0, maxLength=50, enums=[], required=False, value=""):
         self.key = key
         self.data_type = "string"
         self.max_length = maxLength
         self.min_length = minLength
+        self.value = value
         self.enums = enums
         self.required = required
 
@@ -218,14 +219,19 @@ class StringParamField(Field):
             "enum": self.enums
         }}
 
+    @property
+    def test_value(self):
+        return self.value
+
 
 class NumberParamField(Field):
-    def __init__(self, key, minimum=0, maximum=100, enums=[], required=False):
+    def __init__(self, key, minimum=0, maximum=100, enums=[], required=False, value=0):
         self.key = key
         self.enums = enums
         self.data_type = "number"
         self.minimum = minimum
         self.maximum = maximum
+        self.value = value
         self.required = required
 
     def _schema(self):
@@ -249,15 +255,20 @@ class NumberParamField(Field):
             "enum": self.enums
         }}
 
+    @property
+    def test_value(self):
+        return self.value
+
 
 class IntegerParamField(Field):
-    def __init__(self, key, minimum=0, maximum=100, enums=[], required=False):
+    def __init__(self, key, minimum=0, maximum=100, enums=[], required=False, value=0):
         self.enums = enums
         self.key = key
         self.data_type = "integer"
         self.minimum = minimum
         self.maximum = maximum
         self.required = required
+        self.value = value
 
     def _schema(self):
         # todo enhance
@@ -279,6 +290,10 @@ class IntegerParamField(Field):
             "type": self.data_type,
             "enum": self.enums
         }}
+
+    @property
+    def test_value(self):
+        return self.value
 
 
 class BooleanParamField(Field):
@@ -287,6 +302,7 @@ class BooleanParamField(Field):
         self.data_type = "boolean"
         self.default = default
         self.required = required
+        self.test_value = default
 
     def _schema(self):
         # todo enhance
@@ -335,6 +351,12 @@ class Metaclass(type):
 
 
 class WrapperBase(metaclass=Metaclass):
+    def __init__(self):
+        # 仅测试调试用
+        self.inputs_test_values = {}
+        self.params_test_values = {}
+        self.respData = []
+
     def schema(self):
         s = Template(tpl)
         kwargs = self._parse_mapping()
@@ -355,12 +377,6 @@ class WrapperBase(metaclass=Metaclass):
             raise AttributeError("cant' format to schma %s" % str(e))
 
         print(json.dumps(msg, indent=4, ensure_ascii=False))
-
-        # pprint(inputs_body)
-        # pprint(inputs_fields)
-        # pprint(accepts_fields)
-
-        # schema1 = json.loads(msg)
         return
 
     def _parse_inputs(self):
@@ -372,12 +388,16 @@ class WrapperBase(metaclass=Metaclass):
         for inp in inputs:
             if inp.data_type == IMAGE:
                 inputs_fields.update({inp.key: {"dataType": "image"}})
+                self.inputs_test_values.update({inp.key: inp.test_value})
                 inputs_payloads.update(self._get_image_inputs_payload(inp.key))
             elif inp.data_type == AUDIO:
                 inputs_fields.update({inp.key: {"dataType": "audio"}})
+                self.inputs_test_values.update({inp.key: inp.test_value})
                 inputs_payloads.update(self._get_audio_inputs_payload(inp.key))
             elif inp.data_type == STRING:
                 inputs_fields.update({inp.key: {"dataType": "text"}})
+                self.inputs_test_values.update({inp.key: inp.test_value})
+
                 inputs_payloads.update(self._get_text_accepts_payload(inp.key))
         return inputs_fields, inputs_payloads
 
@@ -425,6 +445,8 @@ class WrapperBase(metaclass=Metaclass):
             if param.required:
                 required_params.append(param.key)
             params_fields.update(param._schema())
+            self.params_test_values.update()
+            self.params_test_values[param.key] = param.test_value
         return params_fields, required_params
 
     def _parse_payload(self):
@@ -572,3 +594,103 @@ class WrapperBase(metaclass=Metaclass):
             }
         }
 
+    '''
+    服务初始化
+    @param config:
+        插件初始化需要的一些配置，字典类型
+        key: 配置名
+        value: 配置的值
+    @return
+        ret: 错误码。无错误时返回0
+    '''
+
+    @classmethod
+    def wrapperInit(cls, config: {}) -> int:
+        raise NotImplementedError("Please Inplement Wrapper Class Method: wrapperInit(cls, config: {}) ")
+
+    '''
+    服务逆初始化
+
+    @return
+        ret:错误码。无错误码时返回0
+    '''
+
+    @classmethod
+    def wrapperFini(cls) -> int:
+        raise NotImplementedError("Please Inplement Wrapper Class Method: wrapperFini(cls) ")
+
+    '''
+    非会话模式计算接口,对应oneShot请求,可能存在并发调用
+
+    @param usrTag 句柄
+    #param params 功能参数
+    @param  reqData     写入数据实体
+    @param  respData    返回结果实体,内存由底层服务层申请维护,通过execFree()接口释放
+    @param psrIds 需要使用的个性化资源标识列表
+    @param psrCnt 需要使用的个性化资源个数
+
+    @return 接口错误码
+        reqDat
+        ret:错误码。无错误码时返回0
+    '''
+
+    @classmethod
+    def wrapperOnceExec(cls, usrTag: str, params: {}, reqData: [], respData: [], psrIds: [], psrCnt: int) -> int:
+        raise NotImplementedError(
+            "Please Inplement Wrapper Class Method: wrapperOnceExec(cls, usrTag: str, params: {}, reqData: [], respData: [], psrIds: [], psrCnt: int) ")
+
+    @classmethod
+    def wrapperError(cls, ret: int) -> str:
+        if ret == 100:
+            return "This is a  error return"
+        return ""
+
+    '''
+        保留接口
+    '''
+
+    @classmethod
+    def wrapperCreate(cls, usrTag: str, params: [], psrIds: [], psrCnt: int) -> str:
+        return ""
+
+    '''
+        保留接口
+    '''
+
+    @classmethod
+    def wrapperWrite(cls, handle: str, datas: []) -> int:
+        return 0
+
+    '''
+        保留接口
+    '''
+
+    @classmethod
+    def wrapperRead(cls, handle: str) -> []:
+        return []
+
+    @classmethod
+    def wrapperDestroy(cls, handle: str) -> int:
+        return 0
+
+    def run(self):
+        # 1. 模拟调用初始化引擎
+        #  传入配置当前模拟为空
+        self.wrapperInit({})
+
+        # 2. 准备wrapperOnceExec需要的数据
+        inputs_fields, inputs_body = self._parse_inputs()
+
+        params_fields, required_params = self._parse_params()
+        params = self.params_test_values
+        reqData = []
+        reqData.append(self.inputs_test_values)
+
+        # 3. 模拟调用 exec，并返回数据
+        ret = self.wrapperOnceExec("", params, reqData, self.respData, [], 0)
+
+        # todo respData 检查
+
+        # 4. 模拟检查 wrapperOnceExec返回
+        if ret != 0:
+            print(self.wrapperError(ret))

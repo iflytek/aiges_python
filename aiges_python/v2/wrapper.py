@@ -35,13 +35,13 @@ from sdk import WrapperBase, \
 
 
 class UserRequest(object):
-    params1 = StringParamField(key="p1", enums=["3", "eee"])
+    params1 = StringParamField(key="p1", enums=["3", "eee"], value='3')
     params2 = StringParamField(key="p2", maxLength=44, required=True)
     params3 = StringParamField(key="p3", maxLength=44, required=False)
 
     input1 = ImageBodyField(key="data", path="test.png")
     input3 = ImageBodyField(key="data2", path="test.png")
-    input2 = StringBodyField(key="switch", value="")
+    input2 = StringBodyField(key="switch", value="cc")
 
 
 '''
@@ -78,6 +78,8 @@ class Wrapper(WrapperBase):
 
     @classmethod
     def wrapperInit(cls, config: {}) -> int:
+        print(config)
+        print("Initializing ..")
         return 0
 
     '''
@@ -109,36 +111,18 @@ class Wrapper(WrapperBase):
     @classmethod
     def wrapperOnceExec(cls, usrTag: str, params: {}, reqData: [], respData: [], psrIds: [], psrCnt: int) -> int:
         print("hello world")
-        print(usrTag)
-        print(params)
-        print(reqData)
-        print(psrIds)
         print(psrCnt)
         return 100
 
     @classmethod
-    def wrapperCreate(cls, usrTag: str, params: [], psrIds: [], psrCnt: int) -> str:
-        return ""
-
-    @classmethod
-    def wrapperWrite(cls, handle: str, datas: []) -> int:
-        return 0
-
-    @classmethod
-    def wrapperRead(cls, handle: str) -> []:
-        return []
-
-    @classmethod
-    def wrapperDestroy(cls, handle: str) -> int:
-        return 0
-
-    @classmethod
     def wrapperError(cls, ret: int) -> str:
         if ret == 100:
-            return "this is a tese error return"
+            return "user error defined here"
         return ""
+
 
 
 if __name__ == '__main__':
     m = Wrapper()
+    m.schema()
     m.run()
