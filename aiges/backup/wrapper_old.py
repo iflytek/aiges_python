@@ -1,8 +1,7 @@
+import sys
 
-import sys 
 if not hasattr(sys, 'argv'):
-    sys.argv  = ['']
-
+    sys.argv = ['']
 
 '''
 服务初始化
@@ -13,9 +12,10 @@ if not hasattr(sys, 'argv'):
 @return
     ret: 错误码。无错误时返回0
 '''
+
+
 def wrapperInit(config: {}) -> int:
     return 0
-
 
 '''
 服务逆初始化
@@ -23,6 +23,7 @@ def wrapperInit(config: {}) -> int:
 @return
     ret:错误码。无错误码时返回0
 '''
+
 def wrapperFini() -> int:
     return 0
 
@@ -40,7 +41,9 @@ def wrapperFini() -> int:
     reqDat
     ret:错误码。无错误码时返回0
 '''
-def wrapperOnceExec(usrTag:str,params:{},reqData:[],respData:[],psrIds:[],psrCnt:int) -> int:
+
+
+def wrapperOnceExec(usrTag: str, params: {}, reqData: [], respData: [], psrIds: [], psrCnt: int) -> int:
     print("hello world")
     print(usrTag)
     print(params)
@@ -66,7 +69,7 @@ def wrapperDestroy(handle: str) -> int:
     return 0
 
 
-def wrapperError(ret:int)->str:
-    if ret==100:
+def wrapperError(ret: int) -> str:
+    if ret == 100:
         return "this is a tese error return"
     return ""

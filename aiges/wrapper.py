@@ -60,6 +60,8 @@ class UserResponse(object):
 '''
 用户实现， 名称必须为Wrapper, 必须继承SDK中的 WrapperBase类
 '''
+
+
 class Wrapper(WrapperBase):
     serviceId = "mmocr"
     version = "backup.0"
@@ -76,50 +78,45 @@ class Wrapper(WrapperBase):
         ret: 错误码。无错误时返回0
     '''
 
-    @classmethod
     def wrapperInit(cls, config: {}) -> int:
         print(config)
         print("Initializing ..")
         return 0
 
     '''
-    服务逆初始化
-    
-    @return
-        ret:错误码。无错误码时返回0
-    '''
-
-    @classmethod
-    def wrapperFini(cls) -> int:
-        return 0
-
-    '''
     非会话模式计算接口,对应oneShot请求,可能存在并发调用
-    
+
     @param usrTag 句柄
-    #param params 功能参数
-    @param  reqData     写入数据实体
+    @param params 功能参数
+    @param  reqData     请求数据实体字段
     @param  respData    返回结果实体,内存由底层服务层申请维护,通过execFree()接口释放
     @param psrIds 需要使用的个性化资源标识列表
     @param psrCnt 需要使用的个性化资源个数
-    
+
     @return 接口错误码
         reqDat
         ret:错误码。无错误码时返回0
     '''
 
-    @classmethod
     def wrapperOnceExec(cls, usrTag: str, params: {}, reqData: [], respData: [], psrIds: [], psrCnt: int) -> int:
-        print("hello world")
+        print("hello world 121321132131")
         print(psrCnt)
         return 100
 
-    @classmethod
+    '''
+    服务逆初始化
+
+    @return
+        ret:错误码。无错误码时返回0
+    '''
+
+    def wrapperFini(cls) -> int:
+        return 0
+
     def wrapperError(cls, ret: int) -> str:
         if ret == 100:
             return "user error defined here"
         return ""
-
 
 
 if __name__ == '__main__':

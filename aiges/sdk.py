@@ -16,6 +16,11 @@ HOSTS = [
 ]
 ROUTEKEY = []
 
+STRING = 0
+AUDIO = 1
+IMAGE = 2
+VIDEO = 3
+
 tpl = '''
 {
     "meta":{
@@ -112,11 +117,6 @@ tpl = '''
     }
 }
 '''
-
-STRING = 0
-AUDIO = 1
-IMAGE = 2
-VIDEO = 3
 
 
 class Field(object):

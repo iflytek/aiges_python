@@ -4,7 +4,8 @@
 ## Features
 
 * 用于本地模拟加载 wrapper.py脚本运行
-* 提供简易调试 wrapper.py能力，支持vscode断点debug wrapper.py
+* 用于生成 wrapper.py项目工程
+* 
 
 
 
