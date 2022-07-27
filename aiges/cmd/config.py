@@ -11,5 +11,5 @@
 管理配置中心的
 """
 
-def create_project(name):
+def create_config(name):
     print("creating project")
