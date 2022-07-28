@@ -18,7 +18,12 @@
 #  Vestibulum commodo. Ut rhoncus gravida arcu.
 import sys
 
-from sdk import WrapperBase, \
+try:
+    from aiges_embed import ResponseData, Response, DataListNode, DataListCls  # c++
+except:
+    from aiges.dto import Response, ResponseData, DataListNode, DataListCls
+
+from aiges.sdk import WrapperBase, \
     StringParamField, \
     ImageBodyField, \
     StringBodyField
@@ -98,10 +103,20 @@ class Wrapper(WrapperBase):
         ret:错误码。无错误码时返回0
     '''
 
-    def wrapperOnceExec(cls, usrTag: str, params: {}, reqData: [], respData: [], psrIds: [], psrCnt: int) -> int:
-        print("hello world 121321132131")
-        print(psrCnt)
-        return 100
+    def wrapperOnceExec(cls, params: {}, reqData: DataListCls) -> Response:
+        print("got reqdata , ", reqData.list)
+        print("I am infer logic...")
+
+        r = Response()
+        l = ResponseData()
+        l.key = "ccc"
+        l.status = 1
+        d = open("test_data/test.png", "rb").read()
+        l.len = len(d)
+        l.data = d
+        l.type = 0
+        r.list = [l, l, l]
+        return r
 
     '''
     服务逆初始化

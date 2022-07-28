@@ -3,6 +3,12 @@
 ## const default value
 import base64
 
+#
+try:
+    from aiges_embed import ResponseData, Response, DataListNode, DataListCls
+except:
+    from aiges.dto import Response, ResponseData, DataListNode, DataListCls, DataAudio
+
 from jinja2 import Template
 import json
 import os
@@ -20,6 +26,13 @@ STRING = 0
 AUDIO = 1
 IMAGE = 2
 VIDEO = 3
+
+type_map = {
+    "text": STRING,
+    "audio": AUDIO,
+    "image": IMAGE,
+    "video": VIDEO
+}
 
 tpl = '''
 {
@@ -351,6 +364,8 @@ class Metaclass(type):
 
 
 class WrapperBase(metaclass=Metaclass):
+    config = {}
+
     def __init__(self):
         # 仅测试调试用
         self.inputs_test_values = {}
@@ -604,7 +619,6 @@ class WrapperBase(metaclass=Metaclass):
         ret: 错误码。无错误时返回0
     '''
 
-    @classmethod
     def wrapperInit(cls, config: {}) -> int:
         raise NotImplementedError("Please Inplement Wrapper Class Method: wrapperInit(cls, config: {}) ")
 
@@ -615,7 +629,6 @@ class WrapperBase(metaclass=Metaclass):
         ret:错误码。无错误码时返回0
     '''
 
-    @classmethod
     def wrapperFini(cls) -> int:
         raise NotImplementedError("Please Inplement Wrapper Class Method: wrapperFini(cls) ")
 
@@ -634,12 +647,10 @@ class WrapperBase(metaclass=Metaclass):
         ret:错误码。无错误码时返回0
     '''
 
-    @classmethod
-    def wrapperOnceExec(cls, usrTag: str, params: {}, reqData: [], respData: [], psrIds: [], psrCnt: int) -> int:
+    def wrapperOnceExec(cls, params: {}, reqData: DataListCls) -> Response:
         raise NotImplementedError(
             "Please Inplement Wrapper Class Method: wrapperOnceExec(cls, usrTag: str, params: {}, reqData: [], respData: [], psrIds: [], psrCnt: int) ")
 
-    @classmethod
     def wrapperError(cls, ret: int) -> str:
         if ret == 100:
             return "This is a  error return"
@@ -649,7 +660,6 @@ class WrapperBase(metaclass=Metaclass):
         保留接口
     '''
 
-    @classmethod
     def wrapperCreate(cls, usrTag: str, params: [], psrIds: [], psrCnt: int) -> str:
         return ""
 
@@ -657,7 +667,6 @@ class WrapperBase(metaclass=Metaclass):
         保留接口
     '''
 
-    @classmethod
     def wrapperWrite(cls, handle: str, datas: []) -> int:
         return 0
 
@@ -665,32 +674,42 @@ class WrapperBase(metaclass=Metaclass):
         保留接口
     '''
 
-    @classmethod
     def wrapperRead(cls, handle: str) -> []:
         return []
 
-    @classmethod
     def wrapperDestroy(cls, handle: str) -> int:
         return 0
 
     def run(self):
         # 1. 模拟调用初始化引擎
         #  传入配置当前模拟为空
-        self.wrapperInit({})
+        self.wrapperInit(self.config)
 
-        # 2. 准备wrapperOnceExec需要的数据
-        inputs_fields, inputs_body = self._parse_inputs()
+        try:
+            # 2. 准备wrapperOnceExec需要的数据
+            inputs_fields, inputs_body = self._parse_inputs()
 
-        params_fields, required_params = self._parse_params()
-        params = self.params_test_values
-        reqData = []
-        reqData.append(self.inputs_test_values)
+            params_fields, required_params = self._parse_params()
+            params = self.params_test_values
+            reqData = []
+            reqData.append(self.inputs_test_values)
+            req = DataListCls()
+            tmp = []
+            for key, value in self.inputs_test_values.items():
+                node = DataListNode()
+                node.key = key
+                node.data = value
+                node.len = len(value)
+                typeStr = inputs_fields[key]["dataType"]
+                node.type = type_map.get(typeStr)
+                tmp.append(node)
 
-        # 3. 模拟调用 exec，并返回数据
-        ret = self.wrapperOnceExec("", params, reqData, self.respData, [], 0)
+            req.list = tmp
+            # 3. 模拟调用 exec，并返回数据
+            response = self.wrapperOnceExec(params, req)
+        except Exception as e:
+            # 4. 模拟检查 wrapperOnceExec返回
+            self.wrapperError(-1)
+
 
         # todo respData 检查
-
-        # 4. 模拟检查 wrapperOnceExec返回
-        if ret != 0:
-            print(self.wrapperError(ret))
