@@ -12,6 +12,7 @@ except:
 from jinja2 import Template
 import json
 import os
+from aiges.utils.log import log
 from pprint import pprint
 
 SUB = "ase"
@@ -142,7 +143,8 @@ class Field(object):
 
     def _check_path(self, path):
         if not os.path.exists(path):
-            raise FileNotFoundError
+            e = FileNotFoundError
+            log.warn(e)
         return path
 
     def _encode(self, dataTye, encoding, binary):
@@ -680,6 +682,27 @@ class WrapperBase(metaclass=Metaclass):
     def wrapperDestroy(cls, handle: str) -> int:
         return 0
 
+    def check_resp(self, resp) -> bool:
+
+        if not isinstance(resp, Response):
+            log.error("Please return Response instance in function wrapperOnceExec")
+            return False
+
+        # check 响应list长度
+        if len(resp.list) == 0:
+            log.error("Please return content in response.list")
+            return False
+
+        # check 响应key是否重复
+        keys = [r.key for r in resp.list]
+        set_keys = set(keys)
+        if not len(keys) == len(set_keys):
+            log.error("response list keys must be unique...")
+            log.error("invalid keys %s" % str(keys))
+            return False
+
+        print(keys)
+
     def run(self):
         # 1. 模拟调用初始化引擎
         #  传入配置当前模拟为空
@@ -707,9 +730,10 @@ class WrapperBase(metaclass=Metaclass):
             req.list = tmp
             # 3. 模拟调用 exec，并返回数据
             response = self.wrapperOnceExec(params, req)
+            self.check_resp(response)
         except Exception as e:
             # 4. 模拟检查 wrapperOnceExec返回
+            log.error(e)
             self.wrapperError(-1)
-
 
         # todo respData 检查

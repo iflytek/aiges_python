@@ -23,10 +23,12 @@ try:
 except:
     from aiges.dto import Response, ResponseData, DataListNode, DataListCls
 
+import hashlib
 from aiges.sdk import WrapperBase, \
     StringParamField, \
     ImageBodyField, \
     StringBodyField
+from aiges.utils.log import log
 
 '''
 定义请求类:
@@ -44,8 +46,8 @@ class UserRequest(object):
     params2 = StringParamField(key="p2", maxLength=44, required=True)
     params3 = StringParamField(key="p3", maxLength=44, required=False)
 
-    input1 = ImageBodyField(key="data", path="test.png")
-    input3 = ImageBodyField(key="data2", path="test.png")
+    input1 = ImageBodyField(key="data", path="test_data/test.png")
+    input3 = ImageBodyField(key="data2", path="test_data/test.png")
     input2 = StringBodyField(key="switch", value="cc")
 
 
@@ -104,8 +106,26 @@ class Wrapper(WrapperBase):
     '''
 
     def wrapperOnceExec(cls, params: {}, reqData: DataListCls) -> Response:
-        print("got reqdata , ", reqData.list)
-        print("I am infer logic...")
+        log.info("got reqdata , %s" % reqData.list)
+        #        print(type(reqData.list[0].data))
+        #        print(type(reqData.list[0].data))
+        #        print(reqData.list[0].len)
+        for req in reqData.list:
+            log.info("reqData key: %s , size is %d" % (req.key, len(req.data)))
+
+        log.info("Testing reqData get: ")
+        rg = reqData.get("data")
+        log.info("get key: %s" % rg.key)
+        log.info("get key: %d" % len(rg.data))
+
+        # test not reqdata
+        k = "dd"
+        n = reqData.get(k)
+        if not n:
+            log.error("reqData not has this key %s" % k)
+
+        log.warning("reqData bytes md5sum is %s" % hashlib.md5(reqData.list[0].data).hexdigest())
+        log.info("I am infer logic...please inplement")
 
         r = Response()
         l = ResponseData()
@@ -136,5 +156,5 @@ class Wrapper(WrapperBase):
 
 if __name__ == '__main__':
     m = Wrapper()
-    m.schema()
+    # m.schema()
     m.run()
