@@ -128,6 +128,7 @@ class Wrapper(WrapperBase):
         log.info("I am infer logic...please inplement")
 
         r = Response()
+        # return r.response_err(100)
         l = ResponseData()
         l.key = "ccc"
         l.status = 1

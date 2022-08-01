@@ -71,3 +71,8 @@ class ResponseData:
 class Response:
     def __init__(self):
         self.list: List[ResponseData]
+        self.errCode = 0
+
+    def response_err(self, errCode: int):
+        self.errCode = errCode
+        return self
