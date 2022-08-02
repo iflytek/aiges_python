@@ -156,7 +156,15 @@ class Field(object):
         return NotImplementedError
 
 
-class StringBodyField(Field):
+class ParamField(Field):
+    pass
+
+
+class PayloadField(Field):
+    pass
+
+
+class StringBodyField(PayloadField):
     def __init__(self, key, value="", need_base64=False):
         super(StringBodyField, self).__init__(key, STRING)
         self.value = value
@@ -172,7 +180,7 @@ class StringBodyField(Field):
             return base64.b64encode(self.value)
 
 
-class AudioBodyField(Field):
+class AudioBodyField(PayloadField):
     def __init__(self, key, path=""):
         super(AudioBodyField, self).__init__(key, AUDIO)
         self.data_type = AUDIO
@@ -185,7 +193,7 @@ class AudioBodyField(Field):
             return f.read()
 
 
-class ImageBodyField(Field):
+class ImageBodyField(PayloadField):
     def __init__(self, key, path="", need_base64=False):
         super(ImageBodyField, self).__init__(key, IMAGE)
         self.need_base64 = need_base64
@@ -203,7 +211,7 @@ class ImageBodyField(Field):
                 return base64.b64encode(content)
 
 
-class StringParamField(Field):
+class StringParamField(ParamField):
     def __init__(self, key, minLength=0, maxLength=50, enums=[], required=False, value=""):
         self.key = key
         self.data_type = "string"
@@ -239,7 +247,7 @@ class StringParamField(Field):
         return self.value
 
 
-class NumberParamField(Field):
+class NumberParamField(ParamField):
     def __init__(self, key, minimum=0, maximum=100, enums=[], required=False, value=0):
         self.key = key
         self.enums = enums
@@ -275,7 +283,7 @@ class NumberParamField(Field):
         return self.value
 
 
-class IntegerParamField(Field):
+class IntegerParamField(ParamField):
     def __init__(self, key, minimum=0, maximum=100, enums=[], required=False, value=0):
         self.enums = enums
         self.key = key
@@ -311,7 +319,7 @@ class IntegerParamField(Field):
         return self.value
 
 
-class BooleanParamField(Field):
+class BooleanParamField(ParamField):
     def __init__(self, key, default=False, required=False):
         self.key = key
         self.data_type = "boolean"
@@ -343,14 +351,14 @@ class Metaclass(type):
         for k, v in attrs.items():
             if k == "requestCls":
                 for kk, vv in v.__class__.__dict__.items():
-                    if kk.startswith("input"):
+                    if isinstance(vv, PayloadField):
                         mappings['inputs'].append(vv)
-                    if kk.startswith("params"):
+                    if isinstance(vv, ParamField):
                         mappings['params'].append(vv)
 
             if k == "responseCls":
                 for kk, vv in v.__class__.__dict__.items():
-                    if kk.startswith("accept"):
+                    if kk.startswith("accept") or isinstance(vv, PayloadField):
                         mappings['accepts'].append(vv)
             if k == "call":
                 mappings['call'] = v

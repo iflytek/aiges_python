@@ -171,5 +171,5 @@ class Wrapper(WrapperBase):
 
 if __name__ == '__main__':
     m = Wrapper()
-    # m.schema()
+    m.schema()
     m.run()
