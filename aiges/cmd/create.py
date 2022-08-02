@@ -27,7 +27,7 @@
 import datetime
 
 import os
-
+import shutil
 from typing import Any
 from jinja2 import Environment
 import aiges
@@ -61,7 +61,7 @@ def load_requirements():
 
 
 def load_dockerfile():
-    tpl = "./tpls/Dockerfile.j2"
+    tpl = os.path.join(TPL_DIR, "Dockerfile.j2")
     return _load_template(tpl)
 
 
@@ -150,3 +150,9 @@ def initialize_project_dir(project_name, project_path):
         rf.write(dockerfile_t.render(vars=dockerfile_vars).encode('utf-8'))
         rf.close()
     log.info("Generated: %s >>> Done" % dockerfile_file)
+
+    # 创建测试数据目录
+    test_data = os.path.join(abs_wrapper_dir, "test_data")
+    os.makedirs(test_data,exist_ok=True)
+    test_png = os.path.join(abs_wrapper_dir, "test_data","test.png")
+    shutil.copy(os.path.join(os.path.dirname(aiges.__file__),"test_data","test.png"), test_png)

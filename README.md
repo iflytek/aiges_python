@@ -33,8 +33,7 @@
 vscode debug 配置方法
 
 0. 确保vscode中使用的解释器或者工作区的python解释器 安装过本项目，方法:
-    - `pip install aiges_python` (当前不可用)
-    -  `pip install ./dist/aiges_python-0.1.0-py3-none-any.whl` (当前可用,需要自己poetry build)
+    - `pip install aiges` (当前可用)
 
 1. 打开工作区，确保工作区下有 wrapper.py以及其对应python依赖代码
 
