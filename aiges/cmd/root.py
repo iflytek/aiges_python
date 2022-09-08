@@ -1,6 +1,7 @@
 import argparse
 from .create import *  # 初始化项目目录
 from .config import *
+from .package import *
 
 import pkg_resources
 
@@ -19,6 +20,11 @@ def rootCmd():
     # version
     version = subparsers.add_parser('version')
 
+    # package wrapper
+    pack_parser = subparsers.add_parser('pack')
+    pack_parser.add_argument('-l', '--location', help="工程目录路径", default="./")
+    pack_parser.add_argument('-o', '--output', help="输出压缩路径", default="./")
+
     args = parser.parse_args()
     kwargs = vars(args)
     action = kwargs.pop('action')
@@ -26,6 +32,9 @@ def rootCmd():
         create_project(args)
     elif action == "version":
         print_version()
+    elif action == "pack":
+        pack(args)
+
     else:
         print("not supported for this command")
 
