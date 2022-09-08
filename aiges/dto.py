@@ -42,8 +42,8 @@ Once = 3
 
 class DataListNode:
     def __init__(self):
-        self.key: AnyStr
-        self.data: AnyStr
+        self.key: AnyStr = ''
+        self.data: AnyStr = ''
         self.len = 0
         self.type = DataText
 
@@ -60,19 +60,19 @@ class DataListCls:
 
 
 class ResponseData:
-    def __init__(self):
-        self.key: AnyStr
-        self.data: AnyStr
-        self.len = 0
-        self.type = DataText
-        self.status = Once
+    def __init__(self, key='', data='', length=0, type=DataText, status=Once):
+        self.key = key
+        self.data = data
+        self.len = length
+        self.type = type
+        self.status = status
 
 
 class Response:
     def __init__(self):
-        self.list: List[ResponseData]
+        self.list: List[ResponseData] = [ResponseData()]
         self.errCode = 0
-
+        
     def response_err(self, errCode: int):
         self.errCode = errCode
         return self
