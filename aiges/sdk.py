@@ -164,6 +164,21 @@ class PayloadField(Field):
     pass
 
 
+class JsonBodyField(PayloadField):
+    def __init__(self, key, value="", need_base64=False):
+        super(JsonBodyField, self).__init__(key, STRING)
+        self.value = value
+        self.data_type = STRING
+        self.need_base64 = need_base64
+        self.key = key
+
+    @property
+    def test_value(self):
+        if not self.need_base64:
+            return self.value
+        else:
+            return base64.b64encode(self.value)
+
 class StringBodyField(PayloadField):
     def __init__(self, key, value="", need_base64=False):
         super(StringBodyField, self).__init__(key, STRING)

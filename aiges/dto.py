@@ -31,7 +31,7 @@
 #  Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
 #  Vestibulum commodo. Ut rhoncus gravida arcu.
 from typing import Dict, Tuple, List, AnyStr
-
+import json
 DataText = 0  # 文本数据
 DataAudio = 1  # 音频数据
 DataImage = 2  # 图像数据
@@ -67,12 +67,27 @@ class ResponseData:
         self.type = type
         self.status = status
 
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__,
+            sort_keys=True, indent=4)
+
 
 class Response:
     def __init__(self):
         self.list: List[ResponseData] = [ResponseData()]
-        self.errCode = 0
-        
-    def response_err(self, errCode: int):
-        self.errCode = errCode
+        self.err_code = 0
+
+    def response_err(self, err_code: int):
+        self.err_code = err_code
         return self
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__,
+            sort_keys=True, indent=4)
+
+if __name__ == '__main__':
+    t = Response()
+    d = ResponseData()
+    d.len = 1
+    t.list = [d]
+    print(t.toJSON())

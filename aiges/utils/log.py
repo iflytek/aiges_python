@@ -32,7 +32,7 @@
 #  Vestibulum commodo. Ut rhoncus gravida arcu.
 import logging
 ch = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - %(levelname)s:  %(message)s')
 ch.setFormatter(formatter)
 ch.setLevel(logging.INFO)
 log = logging.getLogger()
