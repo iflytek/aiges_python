@@ -27,32 +27,26 @@ from aiges.stream import StreamHandleThread
 from aiges.utils.log import log
 from aiges.types import *
 
+
 ########
+
 # 请在此区域导入您的依赖库
 
-# Todo
-# for example: import numpy
-import numpy as np
-from PIL import Image
-import io
-from mmocr.utils.ocr import MMOCR
-import json
 
 ########
-
-
-"""
-定义请求类:
- params:  params 开头的属性代表最终HTTP协议中的功能参数parameters部分，
-          params Field支持 StringParamField，
-          NumberParamField，BooleanParamField,IntegerParamField，每个字段均支持枚举
-          params 属性多用于协议中的控制字段，请求body字段不属于params范畴
-
- input:    input字段多用与请求数据段，即body部分，当前支持 ImageBodyField, StringBodyField, 和AudioBodyField
-"""
 
 
 class UserRequest(object):
+    """
+    定义请求类:
+     params:  params 开头的属性代表最终HTTP协议中的功能参数parameters部分，
+              params Field支持 StringParamField，
+              NumberParamField，BooleanParamField,IntegerParamField，每个字段均支持枚举
+              params 属性多用于协议中的控制字段，请求body字段不属于params范畴
+
+     input:    input字段多用与请求数据段，即body部分，当前支持 ImageBodyField, StringBodyField, 和AudioBodyField
+    """
+
     # StringParamField多用于控制参数
     # 指明 enums, maxLength, required有助于自动根据要求配置协议schema
     # params1 = StringParamField(key="p1", enums=["3", "eee"], value='3')
@@ -66,27 +60,30 @@ class UserRequest(object):
     # input2 = StringBodyField(key="switch", value="ctrl")
 
 
-"""
-定义响应类:
- accepts:  accepts代表响应中包含哪些字段, 以及数据类型
-
- input:    input字段多用与请求数据段，即body部分，当前支持 ImageBodyField, StringBodyField, 和AudioBodyField
-"""
-
-
 class UserResponse(object):
+    """
+    定义响应类:
+     accepts:  accepts代表响应中包含哪些字段, 以及数据类型
+
+     input:    input字段多用与请求数据段，即body部分，当前支持 ImageBodyField, StringBodyField, 和AudioBodyField
+    """
+
     # 此类定义响应返回数据段，请务必指明对应key
     # 支持 ImageBodyField， AudioBodyField,  StringBodyField
     # 如果响应是json， 请使用StringBodyField
     accept1 = StringBodyField(key="boxes")
 
 
-"""
-用户实现， 名称必须为Wrapper, 必须继承SDK中的 WrapperBase类
-"""
+class Model:
+    def infer(self):
+        pass
 
 
 class Wrapper(WrapperBase):
+    """
+    用户实现， 名称必须为Wrapper, 必须继承SDK中的 WrapperBase类
+    """
+
     serviceId = "mmocr"
     version = "backup.0"
     requestCls = UserRequest()
@@ -106,9 +103,10 @@ class Wrapper(WrapperBase):
             ret: 错误码。无错误时返回0
         """
         log.info(config)
-        Wrapper.model = MMOCR()
         log.info("Initializing ...")
         Wrapper.session_total = config.get("common.lic", 10)
+
+        # 流式的话，可以在init_handle_pool中 初始化引擎，以下基于线程的流式仅仅是提供示例
         self.session.init_wrapper_config(config)
         self.session.init_handle_pool("thread", 10, MyReqDataThread)
         return 0
@@ -121,30 +119,8 @@ class Wrapper(WrapperBase):
         @return
             响应必须返回 Response类，非Response类将会引起未知错误
         """
-        log.info("got reqdata , %s" % reqData.list)
-        for req in reqData.list:
-            log.info("reqData key: %s , size is %d" % (req.key, len(req.data)))
-
-        res = Response()
-
-        if reqData is None:
-            return res.response_err(10013)
-        if Wrapper.model is None:
-            return res.response_err(10001)
-
-        data = reqData.list[0].data
-        img = np.array(Image.open(io.BytesIO(data)).convert('RGB'))
-        rlt = Wrapper.model.readtext(img, print_result=True, details=True)
-        rlt = json.dumps(rlt)
-
-        l = ResponseData()
-        l.key = 'boxes'
-        l.data = rlt
-        l.len = len(rlt)
-        l.status = Once
-        l.type = DataText
-        res.list = [l]
-        return res
+        pass
+        return None
 
     def wrapperFini(cls) -> int:
         """
@@ -184,6 +160,7 @@ class Wrapper(WrapperBase):
         if _session == None:
             log.info("can't create this handle:" % handle)
             return -1
+
         _session.setup_sid(sid)
         _session.setup_params(params)
         _session.setup_callback_fn(callback)
