@@ -67,9 +67,9 @@ class SessionManager:
             self.handle_pool = self.init_threads(ReqThreadCls, nums)
         self.initialized = True
 
-    def init_threads(self, ReqThreadCls, nums=0):
+    def init_threads(self, ReqThreadCls, nums=10):
         # 线程模式
-        return ThreadPool(ReqThreadCls, nums)
+        return ThreadPool(ReqThreadCls, 0, nums)
 
     def init_processes(self, ReqThreadCls, procs=2, threads_per_cpu=5):
         # 进程\线程模式
