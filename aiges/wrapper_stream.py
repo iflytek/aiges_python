@@ -20,9 +20,12 @@ except:
 from aiges.sdk import WrapperBase, \
     StringParamField, \
     ImageBodyField, \
-    StringBodyField, \
-    HandleThread
+    StringBodyField
+
+from aiges.stream import StreamHandleThread
+
 from aiges.utils.log import log
+from aiges.types import *
 
 ########
 # 请在此区域导入您的依赖库
@@ -34,12 +37,11 @@ from PIL import Image
 import io
 from mmocr.utils.ocr import MMOCR
 import json
-from aiges.dto import DataText, Once
 
 ########
 
 
-'''
+"""
 定义请求类:
  params:  params 开头的属性代表最终HTTP协议中的功能参数parameters部分，
           params Field支持 StringParamField，
@@ -47,7 +49,7 @@ from aiges.dto import DataText, Once
           params 属性多用于协议中的控制字段，请求body字段不属于params范畴
 
  input:    input字段多用与请求数据段，即body部分，当前支持 ImageBodyField, StringBodyField, 和AudioBodyField
-'''
+"""
 
 
 class UserRequest(object):
@@ -64,12 +66,12 @@ class UserRequest(object):
     # input2 = StringBodyField(key="switch", value="ctrl")
 
 
-'''
+"""
 定义响应类:
  accepts:  accepts代表响应中包含哪些字段, 以及数据类型
 
  input:    input字段多用与请求数据段，即body部分，当前支持 ImageBodyField, StringBodyField, 和AudioBodyField
-'''
+"""
 
 
 class UserResponse(object):
@@ -79,9 +81,9 @@ class UserResponse(object):
     accept1 = StringBodyField(key="boxes")
 
 
-'''
+"""
 用户实现， 名称必须为Wrapper, 必须继承SDK中的 WrapperBase类
-'''
+"""
 
 
 class Wrapper(WrapperBase):
@@ -90,19 +92,19 @@ class Wrapper(WrapperBase):
     requestCls = UserRequest()
     responseCls = UserResponse()
 
-    '''
-    服务初始化
-    @param config:
-        插件初始化需要的一些配置，字典类型
-        key: 配置名
-        value: 配置的值
-    @return
-        ret: 错误码。无错误时返回0
-    '''
     mode = None
     session_total = 0  # 单进程总会话数量控制，过大会影响效率，请合理控制
 
     def wrapperInit(self, config: {}) -> int:
+        """
+        服务初始化
+        @param config:
+            插件初始化需要的一些配置，字典类型
+            key: 配置名
+            value: 配置的值
+        @return
+            ret: 错误码。无错误时返回0
+        """
         log.info(config)
         Wrapper.model = MMOCR()
         log.info("Initializing ...")
@@ -111,15 +113,14 @@ class Wrapper(WrapperBase):
         self.session.init_handle_pool("thread", 10, MyReqDataThread)
         return 0
 
-    '''
-    非会话模式计算接口,对应oneShot请求,可能存在并发调用
-    @param params 功能参数
-    @param  reqData     请求数据实体字段 DataListCls,可通过 aiges.dto.DataListCls查看
-    @return
-        响应必须返回 Response类，非Response类将会引起未知错误
-    '''
-
     def wrapperOnceExec(cls, params: {}, reqData: DataListCls) -> Response:
+        """
+        非会话模式计算接口,对应oneShot请求,可能存在并发调用
+        @param params 功能参数
+        @param  reqData     请求数据实体字段 DataListCls,可通过 aiges.dto.DataListCls查看
+        @return
+            响应必须返回 Response类，非Response类将会引起未知错误
+        """
         log.info("got reqdata , %s" % reqData.list)
         for req in reqData.list:
             log.info("reqData key: %s , size is %d" % (req.key, len(req.data)))
@@ -145,25 +146,18 @@ class Wrapper(WrapperBase):
         res.list = [l]
         return res
 
-    '''
-    服务逆初始化
-
-    @return
-        ret:错误码。无错误码时返回0
-    '''
-
     def wrapperFini(cls) -> int:
+        """
+        服务逆初始化
+
+        @return
+            ret:错误码。无错误码时返回0
+        """
         log.info("fini success")
         return 0
 
-    '''
-    非会话模式计算接口,对应oneShot请求,可能存在并发调用
-    @param ret wrapperOnceExec返回的response中的error_code 将会被自动传入本函数并通过http响应返回给最终用户
-    @return
-        str 错误提示会返回在接口响应中
-    '''
-
     def wrapperError(cls, ret: int) -> str:
+
         if ret == 10013:
             return "reqData is empty"
         elif ret == 10001:
@@ -171,12 +165,13 @@ class Wrapper(WrapperBase):
         else:
             return "other error code"
 
-    '''
-        此函数保留测试用，不可删除
-    '''
-
     def wrapperCreate(self, params: {}, sid: str) -> SessionCreateResponse:
-
+        """
+        非会话模式计算接口,对应oneShot请求,可能存在并发调用
+        @param ret wrapperOnceExec返回的response中的error_code 将会被自动传入本函数并通过http响应返回给最终用户
+        @return
+            SessionCreateResponse类, 如果返回不是该类会报错
+        """
         s = SessionCreateResponse()
         # 这里是取 handle
         handle = self.session.get_idle_handle()
@@ -200,39 +195,42 @@ class Wrapper(WrapperBase):
         return s
 
     def wrapperWrite(self, handle: str, req: DataListCls, sid: str) -> int:
-        # print("handle",handle)
-        # print("sid:",sid)
-        # print("req:", req)
+        """
+        会话模式下: 上行数据写入接口
+
+        :param handle: 会话handle 字符串
+        :param req:  请求数据结构
+        :param sid:  请求会话ID
+        :return:
+        """
         _session = self.session.get_session(handle=handle)
         if _session == None:
             log.info("can't get this handle:" % handle)
             return -1
-        # print("in.q", _session.in_q)
         _session.in_q.put(req)
-        # for index, i in enumerate(req.list):
-        #    print("index,",index)
-        #    print(i.key)
-        #    print(i.data)
         return 0
 
     def wrapperRead(self, handle: str, sid: str) -> Response:
-        # print("handle",handle)
-        # print("sid:",sid)
+        """
+        会话模式: 当前此接口在会话模式且异步取结果时下不会被调用！！！！！返回数据由callback返回
+        同步取结果模式时，下行数据返回接口
+                  如果为异步返回结果时，需要设置加载器为asyncMode=true [当前默认此模式],
+        :param handle: 请求数据结构
+        :param sid: 请求会话ID
+        :return: Response类
+        """
         _session = self.session.get_session(handle=handle)
         r = Response()
         l = ResponseData()
-        # resp = _session.out_q.get()
-        # print("out.q", _session.out_q)
         if _session.out_q.empty():
             l.status = 1
             l.len = 0
             l.data = b''
             l.key = "boxes"
             r.list = [l]
-            #  print("nll")
             return r
         rs = _session.out_q.get()
-        if rs.list[0].status == 2:
+        if rs.list[0].status == DataEnd:
             print("########Done")
             _session.reset()
         if not isinstance(rs, Response):
@@ -241,6 +239,13 @@ class Wrapper(WrapperBase):
         return rs
 
     def wrapperTestFunc(cls, data: [], respData: []):
+        """
+        此函数保留测试用，不可删除
+        :param data:
+        :param respData:
+        :return:
+        """
+
         r = Response()
         l = ResponseData()
         l.key = "boxes"
@@ -255,13 +260,18 @@ class Wrapper(WrapperBase):
         return r
 
 
-class MyReqDataThread(HandleThread):
+class MyReqDataThread(StreamHandleThread):
+    """
+    流式示例 thread，
+    """
+
     def __init__(self, session_thread, in_q, out_q):
         super().__init__(session_thread, in_q, out_q)
 
     def run(self):
         while True:
             req = self.in_q.get()
+            print(self.session_thread.params)
             self.infer(req)
 
     def infer(self, req: DataListCls):

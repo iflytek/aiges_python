@@ -50,5 +50,6 @@ DataOnce = 3 # 非会话单次输入输出
 Once = DataOnce
 
 # 并行模式
-THREAD_MODE = "thread"
-PROCESS_MODE = "process"
+THREAD_MODE = "thread" # 默认模式，
+
+PROCESS_MODE = "process" # 当前不可用
