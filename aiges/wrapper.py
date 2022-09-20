@@ -19,9 +19,12 @@
 import sys
 
 try:
-    from aiges_embed import ResponseData, Response, DataListNode, DataListCls  # c++
+    from aiges_embed import ResponseData, Response, DataListNode, DataListCls,SessionCreateResponse  # c++
 except:
-    from aiges.dto import Response, ResponseData, DataListNode, DataListCls
+    from aiges.dto import Response, ResponseData, DataListNode, DataListCls,SessionCreateResponse
+
+
+from aiges.sdk import SessionManager
 
 import hashlib
 from aiges.sdk import WrapperBase, \
@@ -85,9 +88,12 @@ class Wrapper(WrapperBase):
         ret: 错误码。无错误时返回0
     '''
 
-    def wrapperInit(cls, config: {}) -> int:
+    def wrapperInit(self, config: {}) -> int:
         print(config)
         print("Initializing ..")
+        # 会话模式创建sessionManager
+        self.session.init_wrapper_config(config)
+
         return 0
 
     '''
@@ -168,6 +174,50 @@ class Wrapper(WrapperBase):
         print(444)
         return r
 
+    def wrapperCreate(self, params: {}, sid: str) -> SessionCreateResponse:
+        print(params)
+        s = SessionCreateResponse()
+        # 这里是取 handle
+        handle = self.session.get_idle_handle()
+
+        if not handle:
+            s.error_code = -1
+            s.handle = ""
+            return  s
+        _session = self.session.get_session(handle=handle)
+        _session.setup_sid(sid)
+        _session.setup_params(params)
+
+        print(sid)
+        s = SessionCreateResponse()
+        s.handle = handle
+        s.error_code = 0
+        return s
+
+    def wrapperWrite(self, handle:str, req: DataListCls, sid:str) -> int:
+        print("handle",handle)
+        print("sid:",sid)
+        print("req:", req)
+        for i in req.list:
+            print(i.key)
+            print(i.data)
+        return 0
+
+    def wrapperRead(self, handle:str, sid:str) -> Response:
+        print("handle",handle)
+        print("sid:",sid)
+        _session = self.session.get_session(handle=handle)
+        print("out.q", _session.out_q)
+        r = Response()
+        l = ResponseData()
+
+        l.key = "ccc"
+        l.status = 1
+        d = b"cccccc"
+        l.len = len(d)
+        l.data = d
+        r.list = [l]
+        return r
 
 if __name__ == '__main__':
     m = Wrapper()

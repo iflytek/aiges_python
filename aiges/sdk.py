@@ -1,19 +1,26 @@
 # coding: utf-8
 
 ## const default value
+import queue
+
+import time
 import base64
 
 #
 try:
-    from aiges_embed import ResponseData, Response, DataListNode, DataListCls
+    from aiges_embed import ResponseData, Response, DataListNode, DataListCls, SessionCreateResponse
 except:
-    from aiges.dto import Response, ResponseData, DataListNode, DataListCls, DataAudio
+    from aiges.dto import Response, ResponseData, DataListNode, DataListCls, DataAudio, SessionCreateResponse
 
 from jinja2 import Template
 import json
 import os
 from aiges.utils.log import log
+import threading
 from pprint import pprint
+from aiges.types import *
+import queue
+from threading import Lock
 
 SUB = "ase"
 CALL = "atmos"
@@ -22,11 +29,6 @@ HOSTS = [
     "api.xf-yun.com"
 ]
 ROUTEKEY = []
-
-STRING = 0
-AUDIO = 1
-IMAGE = 2
-VIDEO = 3
 
 type_map = {
     "text": STRING,
@@ -178,6 +180,7 @@ class JsonBodyField(PayloadField):
             return self.value
         else:
             return base64.b64encode(self.value)
+
 
 class StringBodyField(PayloadField):
     def __init__(self, key, value="", need_base64=False):
@@ -396,6 +399,7 @@ class WrapperBase(metaclass=Metaclass):
         self.inputs_test_values = {}
         self.params_test_values = {}
         self.respData = []
+        self.session = SessionManager()
 
     def schema(self):
         s = Template(tpl)
@@ -685,8 +689,11 @@ class WrapperBase(metaclass=Metaclass):
         保留接口
     '''
 
-    def wrapperCreate(cls, usrTag: str, params: [], psrIds: [], psrCnt: int) -> str:
-        return ""
+    def wrapperCreate(cls, params: {}, sid: str) -> SessionCreateResponse:
+        print(params)
+
+        print(sid)
+        return
 
     '''
         保留接口
@@ -760,3 +767,173 @@ class WrapperBase(metaclass=Metaclass):
             self.wrapperError(-1)
 
         # todo respData 检查
+
+
+lock = Lock()
+
+
+class SessionManager:
+    """
+    session管理器
+    """
+
+    def __init__(self, config={}, mode=THREAD_MODE, nums=0):
+        self.initialized = False
+        self.code = 0
+
+        self.handle_pool: Pool
+        self.lock = threading.Lock()
+
+    def init_wrapper_config(self, config={}):
+        self.wrapperConfig = config
+
+    def init_handle_pool(self, mode, nums, ReqThreadCls):
+        if mode == THREAD_MODE:
+            self.handle_pool = self.init_threads(ReqThreadCls, nums)
+        elif mode == PROCESS_MODE:
+            self.handle_pool = self.init_processes(nums)
+        else:
+            self.handle_pool = self.init_threads(ReqThreadCls, nums)
+        self.initialized = True
+
+    def init_threads(self, ReqThreadCls, nums=0):
+        # 线程模式
+        return ThreadPool(ReqThreadCls, nums)
+
+    def init_processes(self, nums=0):
+        # 进程模式
+        pass
+
+    def get_session(self, handle):
+        # 通过handle名获取 session
+        s = None
+        if self.handle_pool.workers:
+            s = self.handle_pool.workers.get(handle)
+        if not s:
+            pass
+        return s
+
+    def set_idle_session(self, handle):
+        self.handle_pool.set_idle(handle, True)
+
+    def get_idle_handle(self):
+        # 获取一个空闲的session
+        _session = None
+        key = ""
+        with lock:
+            for h, s in self.handle_pool.workers.items():
+                if s.idle:
+                    _session = s
+                    s.is_idle = False
+                    return h
+        if not _session:
+            return
+
+    def reset_session(self, handle):
+        _session = self.handle_pool.workers.get(handle)
+        if not _session:
+            return
+        _session.reset()
+
+    def push_back(self, handle):
+        # 标记这个handle对应线程为空闲
+        self.set_idle_session(handle)
+        self.reset_session(handle)
+        pass
+
+
+class Pool:
+    def __init__(self):
+        # 维护 threads
+        self.workers = {}
+
+
+class ThreadPool(Pool):
+    def __init__(self, reqDataThreadCls, nums=10, ):
+        self.workers = {}
+        for i in range(0, nums):
+            handle = "Thread-{}".format(str(i))
+            self.workers[handle] = WorkerThread(handle)
+            self.workers[handle].setHandleThreadClass(reqDataThreadCls)
+            self.workers[handle].start()
+
+    pass
+
+
+def process_req_data(q, writeFunc):
+    while True:
+        if not q.empty():
+            req = q.get()
+
+
+def process_resp_data(q, readFunc):
+    while True:
+        if not q.empty():
+            resp = q.get()
+
+
+class HandleThread(threading.Thread):
+    def __init__(self, session_thread, in_q, out_q):
+        threading.Thread.__init__(self)
+        self.session_thread = session_thread
+        self.in_q = in_q
+        self.out_q = out_q
+
+    def run(self):
+        while True:
+            time.sleep(100)
+            # req = self.in_q.get()
+            # if req.list[0].status == 2:
+            #    self.session_thread.reset()
+
+
+class WorkerThread(threading.Thread):  # 继承父类threading.Thread
+    def __init__(self, handle):
+        threading.Thread.__init__(self)
+        self.handle = handle
+        self.sid = ""
+        self.in_q = queue.Queue()  # 定义工作线程队列
+        self.out_q = queue.Queue()
+        self.is_idle = True
+        self.params = {}
+        self.req_data_status = DataBegin
+        self.resp_data_status = DataBegin
+
+        self.HandleThreadClass = HandleThread
+        self.callback_fn = None
+
+    @property
+    def idle(self):
+        return self.is_idle
+
+    def setup_sid(self, sid):
+        self.sid = sid
+
+    def setup_params(self, params):
+        self.params = params
+        self.is_idle = False
+
+    def setup_callback_fn(self, callback):
+        self.callback_fn = callback
+
+    def reset(self):
+        self.sid = ""
+        self.params = {}
+        with self.in_q.mutex:
+            self.in_q.queue.clear()
+        with self.out_q.mutex:
+            self.out_q.queue.clear()
+        self.is_idle = True
+
+    def setHandleThreadClass(self, cls):
+        if issubclass(self.HandleThreadClass, HandleThread):
+            print("handltrhead is ok")
+        self.HandleThreadClass = cls
+
+    def run(self):
+        pr = self.HandleThreadClass(self, self.in_q, self.out_q)
+        pr.start()
+        pr.join()
+
+    def register(self, func, sid):
+        pass

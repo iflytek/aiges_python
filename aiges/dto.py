@@ -32,12 +32,9 @@
 #  Vestibulum commodo. Ut rhoncus gravida arcu.
 from typing import Dict, Tuple, List, AnyStr
 import json
-DataText = 0  # 文本数据
-DataAudio = 1  # 音频数据
-DataImage = 2  # 图像数据
-DataVideo = 3  # 视频数据
 
-Once = 3
+from aiges.types import *
+
 
 
 class DataListNode:
@@ -69,21 +66,31 @@ class ResponseData:
 
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__,
-            sort_keys=True, indent=4)
+                          sort_keys=True, indent=4)
 
 
 class Response:
     def __init__(self):
         self.list: List[ResponseData] = [ResponseData()]
-        self.err_code = 0
+        self.error_code = 0
 
-    def response_err(self, err_code: int):
-        self.err_code = err_code
+    def response_err(self, error_code: int):
+        self.error_code = error_code
         return self
 
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__,
-            sort_keys=True, indent=4)
+                          sort_keys=True, indent=4)
+
+
+class SessionCreateResponse:
+    def __init__(self):
+        self.handle = ""
+        self.error_code = 0
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__,
+                          sort_keys=True, indent=4)
 
 if __name__ == '__main__':
     t = Response()

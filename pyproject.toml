@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aiges"
-version = "0.3.0"
+version = "0.1.0-dev"
 description = "A module for test aiges's python wrapper.py"
 authors = ["maybaby <ybyang7@iflytek.com>"]
 license = "Apache License Version 2.0"
