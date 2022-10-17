@@ -264,8 +264,12 @@ class MyReqDataThread(StreamHandleThread):
         r.list = [l]
         self.session_thread.callback_fn(r, self.session_thread.sid)
         if l.status == DataEnd:
-            self.session_thread.reset() #最后一帧数据后 释放会话
+            self.session_thread.reset()  # 最后一帧数据后 释放会话
         # self.out_q.put(r)
+
+    def init_model(self, *args, **kwargs):
+        model = None
+        return model
 
 
 if __name__ == '__main__':

@@ -185,8 +185,10 @@ class JsonBodyField(PayloadField):
 
 
 class StringBodyField(PayloadField):
-    def __init__(self, key, value="", need_base64=False):
+    def __init__(self, key, value=b"", need_base64=False):
         super(StringBodyField, self).__init__(key, STRING)
+        if not isinstance(value, bytes):
+            raise Exception("StringBodyField value must be bytes String...")
         self.value = value
         self.data_type = STRING
         self.need_base64 = need_base64
@@ -729,6 +731,12 @@ class WrapperBase(metaclass=Metaclass):
             log.error("Please return content in response.list")
             return False
 
+        for d in resp.list:
+            # check Response data 类型
+            if not isinstance(d.data, memoryview) and not isinstance(d.data, bytes):
+                log.error("ResponseData 's data field must be  bytes or memoryview")
+                return False
+
         # check 响应key是否重复
         keys = [r.key for r in resp.list]
         set_keys = set(keys)
@@ -739,7 +747,13 @@ class WrapperBase(metaclass=Metaclass):
 
         print(keys)
 
-    def run(self):
+    def run(self, stream=False):
+        if not stream:
+            self.run_once()
+        else:
+            self.run_stream()
+
+    def run_once(self):
         # 1. 模拟调用初始化引擎
         #  传入配置当前模拟为空
         self.wrapperInit(self.config)
@@ -774,3 +788,6 @@ class WrapperBase(metaclass=Metaclass):
 
         # todo respData 检查
 
+    def run_stream(self):
+        raise NotImplementedError("Not implement,will publish next in v0.5.0+")
+        pass

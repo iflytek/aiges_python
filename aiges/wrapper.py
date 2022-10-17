@@ -51,7 +51,7 @@ class UserRequest(object):
 
     input1 = ImageBodyField(key="data", path="test_data/test.png")
     input3 = ImageBodyField(key="data2", path="test_data/test.png")
-    input2 = StringBodyField(key="switch", value="cc")
+    input2 = StringBodyField(key="switch", value=b"cc")
 
 
 '''
@@ -139,6 +139,7 @@ class Wrapper(WrapperBase):
         l.key = "ccc"
         l.status = 1
         d = open("test_data/test.png", "rb").read()
+        d = "cc"
         l.len = len(d)
         l.data = d
         l.type = 0
@@ -165,7 +166,7 @@ class Wrapper(WrapperBase):
         l = ResponseData()
         l.key = "ccc"
         l.status = 1
-        d = open("pybind11/docs/pybind11-logo.png", "rb").read()
+        d = open("pybind11/docs/pybind11-logo.png", "r").read()
         l.len = len(d)
         l.data = d
         r.list = [l, l, l]
@@ -213,7 +214,7 @@ class Wrapper(WrapperBase):
 
         l.key = "ccc"
         l.status = 1
-        d = b"cccccc"
+        d = "cccccc"
         l.len = len(d)
         l.data = d
         r.list = [l]

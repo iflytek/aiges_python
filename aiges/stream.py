@@ -169,8 +169,12 @@ class StreamHandleThread(threading.Thread):
         self.in_q = in_q
         self.out_q = out_q
 
+    def init_model(self, *args, **kwarg):
+        raise NotImplementedError("implementhis")
+
     def run(self):
         # 此方法需要子类重写
+        self.init_model(self.session_thread.handle)
         while True:
             time.sleep(100)
             # req = self.in_q.get()
@@ -229,7 +233,10 @@ class WorkerThread(threading.Thread):
     def __init__(self, handle):
         threading.Thread.__init__(self)
         self.handle = handle  # handle标识，此处指的的是线程handle标识
+
+
         self.sid = ""  # 会话ID,由外部请求输入
+
         self.in_q = queue.Queue()  # 定义输入工作线程队列
         self.out_q = queue.Queue()  # 异步callback获取结果时，此队列无用，仅同步取结果时有用
         self.is_idle = True  # 标明当前线程是否空闲，空闲则可以被获取
@@ -239,6 +246,9 @@ class WorkerThread(threading.Thread):
 
         self.callback_fn = None  # 该回调为，运行时，c++传入的会话callback，函数形式为 callback(response:Response , sid:string),
         # 用于回调数据返回
+
+    def init_model(self, *args, **kwargs):
+        raise NotImplementedError("Please implement this method...")
 
     @property
     def idle(self):
