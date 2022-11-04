@@ -3,8 +3,8 @@
 """ 
 @author: nivic ybyang7
 @license: Apache Licence 
-@file: log.py
-@time: 2022/07/27
+@file: __init__.py
+@time: 2022/06/15
 @contact: ybyang7@iflytek.com
 @site:  
 @software: PyCharm 
@@ -30,27 +30,3 @@
 #  Etiam sed turpis ac ipsum condimentum fringilla. Maecenas magna.
 #  Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
 #  Vestibulum commodo. Ut rhoncus gravida arcu.
-import logging
-
-fmt = '%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - %(levelname)s:  %(message)s'
-level = logging.DEBUG
-ch = logging.StreamHandler()
-formatter = logging.Formatter(fmt)
-ch.setFormatter(formatter)
-ch.setLevel(logging.INFO)
-log = logging.getLogger()
-log.setLevel(level)
-log.addHandler(ch)
-
-
-def getLogger(fmt=fmt, level=level, name="root"):
-    global log
-    ch = logging.StreamHandler()
-    formatter = logging.Formatter(fmt)
-    ch.setFormatter(formatter)
-    ch.setLevel(logging.INFO)
-    log.setLevel(level)
-    for handler in log.handlers:
-        log.removeHandler(handler)
-    log.addHandler(ch)
-    return log
