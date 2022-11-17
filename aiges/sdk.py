@@ -211,6 +211,10 @@ class AudioBodyField(PayloadField):
 
     @property
     def test_value(self):
+        if not os.path.exists(self.path):
+            log.warn("%s not exist.. check " % self.path)
+            return b""
+
         with open(self.path, "rb") as f:
             return f.read()
 
@@ -225,6 +229,10 @@ class ImageBodyField(PayloadField):
 
     @property
     def test_value(self):
+        if not os.path.exists(self.path):
+            log.warn("%s not exist.. check " % self.path)
+            return b""
+
         with open(self.path, "rb") as f:
             content = f.read()
             if not self.need_base64:
@@ -423,9 +431,9 @@ class WrapperBase(metaclass=Metaclass):
             msg = json.loads(s.render(**kwargs))
         except Exception as e:
             raise AttributeError("cant' format to schma %s" % str(e))
-
-        print(json.dumps(msg, indent=4, ensure_ascii=False))
-        return
+        log.info("Genrating Schema...")
+        data = json.dumps(msg, indent=4, ensure_ascii=False)
+        return data
 
     def _parse_inputs(self):
         inputs = self.__mappings__.get('inputs', [])
@@ -471,7 +479,7 @@ class WrapperBase(metaclass=Metaclass):
     def _parse_mapping(self):
         call = self.__mappings__.get("call", "atmos")
         call_type = self.__mappings__.get("call_type", "0")
-        route = self.__mappings__.get("route", "/v1/private/{}".format(self.serviceId))
+        route = self.__mappings__.get("route", "/{}/private/{}".format(self.version, self.serviceId))
         sub = self.__mappings__.get("sub", "ase")
         hosts = self.__mappings__.get("hosts", "api.xf-yun.com")
         args = dict()
@@ -725,7 +733,6 @@ class WrapperBase(metaclass=Metaclass):
         if not isinstance(resp, Response):
             log.error("Please return Response instance in function wrapperOnceExec")
             return False
-
 
         # check 响应list长度
         if len(resp.list) == 0:

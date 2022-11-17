@@ -8,6 +8,10 @@ license = "Apache License Version 2.0"
 [tool.poetry.dependencies]
 python = ">=3.6"
 jinja2 = ">=2.0"
+protobuf = ">=4.21"
+grpcio-health-checking = ">=1.50.0"
+grpcio = ">=1.50.0"
+grpcio-tools = ">=1.50.0"
 [tool.poetry.dev-dependencies]
 jinja2 = ">=2.0"
 [build-system]

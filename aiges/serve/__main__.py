@@ -137,6 +137,13 @@ class WrapperServiceServicer(aiges_inner_pb2_grpc.WrapperServiceServicer):
         call_back(self.response_queue, r)
         return aiges_inner_pb2.Response(list=[])
 
+    def wrapperSchema(self, request, context):
+        log.info("Entering warpperSchema ...")
+        if not self.userWrapperObject:
+            return aiges_inner_pb2.Response(ret=USER_EXEC_ERROR)
+        schame = self.userWrapperObject.schema()
+        return aiges_inner_pb2.Schema(data=schame)
+
     def convertPbReq2Req(self, req):
         r = DataListCls()
         r.list = req.list
