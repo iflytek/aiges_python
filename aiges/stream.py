@@ -33,7 +33,7 @@
 import threading
 from threading import Lock
 from multiprocessing import Manager, Process
-from aiges.types import *
+import aiges.types as ai_types
 import time
 import os
 import queue
@@ -46,7 +46,7 @@ class SessionManager:
     session管理器
     """
 
-    def __init__(self, config={}, mode=THREAD_MODE, nums=0):
+    def __init__(self, config={}, mode=ai_types.THREAD_MODE, nums=0):
         self.initialized = False
         self.code = 0
 
@@ -57,10 +57,10 @@ class SessionManager:
         self.wrapperConfig = config
 
     def init_handle_pool(self, mode, nums, ReqThreadCls):
-        if mode == THREAD_MODE:
+        if mode == ai_types.THREAD_MODE:
             # 默认线程模式
             self.handle_pool = self.init_threads(ReqThreadCls, nums)
-        elif mode == PROCESS_MODE:
+        elif mode == ai_types.PROCESS_MODE:
             # 进程+线程模式当前不可用
             self.handle_pool = self.init_processes(ReqThreadCls, 2, 5)
         else:

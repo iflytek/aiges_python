@@ -16,13 +16,14 @@
 #  Etiam sed turpis ac ipsum condimentum fringilla. Maecenas magna.
 #  Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
 #  Vestibulum commodo. Ut rhoncus gravida arcu.
+import json
+import pprint
 import sys
 
 try:
-    from aiges_embed import ResponseData, Response, DataListNode, DataListCls,SessionCreateResponse  # c++
+    from aiges_embed import ResponseData, Response, DataListNode, DataListCls, SessionCreateResponse  # c++
 except:
-    from aiges.dto import Response, ResponseData, DataListNode, DataListCls,SessionCreateResponse
-
+    from aiges.dto import Response, ResponseData, DataListNode, DataListCls, SessionCreateResponse
 
 from aiges.sdk import SessionManager
 
@@ -51,7 +52,7 @@ class UserRequest(object):
 
     input1 = ImageBodyField(key="data", path="test_data/test.png")
     input3 = ImageBodyField(key="data2", path="test_data/test.png")
-    input2 = StringBodyField(key="switch", value=b"cc")
+    input2 = StringBodyField(key="switch", value=b"")
 
 
 '''
@@ -184,7 +185,7 @@ class Wrapper(WrapperBase):
         if not handle:
             s.error_code = -1
             s.handle = ""
-            return  s
+            return s
         _session = self.session.get_session(handle=handle)
         _session.setup_sid(sid)
         _session.setup_params(params)
@@ -195,18 +196,18 @@ class Wrapper(WrapperBase):
         s.error_code = 0
         return s
 
-    def wrapperWrite(self, handle:str, req: DataListCls, sid:str) -> int:
-        print("handle",handle)
-        print("sid:",sid)
+    def wrapperWrite(self, handle: str, req: DataListCls, sid: str) -> int:
+        print("handle", handle)
+        print("sid:", sid)
         print("req:", req)
         for i in req.list:
             print(i.key)
             print(i.data)
         return 0
 
-    def wrapperRead(self, handle:str, sid:str) -> Response:
-        print("handle",handle)
-        print("sid:",sid)
+    def wrapperRead(self, handle: str, sid: str) -> Response:
+        print("handle", handle)
+        print("sid:", sid)
         _session = self.session.get_session(handle=handle)
         print("out.q", _session.out_q)
         r = Response()
@@ -220,7 +221,10 @@ class Wrapper(WrapperBase):
         r.list = [l]
         return r
 
+
 if __name__ == '__main__':
-    m = Wrapper()
-    m.schema()
-    m.run()
+    m = Wrapper(legacy=False, is_aipaas=True, keep_schema_default_value=False)
+    c = m.schema()
+    #f = open("out.json", "w")
+    #print(json.dump(c, f, indent=4))
+    # m.run()

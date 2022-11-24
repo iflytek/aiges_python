@@ -16,13 +16,14 @@ from jinja2 import Template
 import json
 import os
 from aiges.utils.log import log
+from aiges.types import *
 import threading
 from pprint import pprint
-from aiges.types import *
 from aiges.stream import *
 import queue
 from threading import Lock
 from multiprocessing import Process
+from aiges.schema.aischema import *
 
 SUB = "ase"
 CALL = "atmos"
@@ -185,7 +186,7 @@ class JsonBodyField(PayloadField):
 
 
 class StringBodyField(PayloadField):
-    def __init__(self, key, value=b"", need_base64=False):
+    def __init__(self, key, value=b" ", need_base64=False, encoding="utf8", format="plain", compress="raw", status=3):
         super(StringBodyField, self).__init__(key, STRING)
         if not isinstance(value, bytes):
             raise Exception("StringBodyField value must be bytes String...")
@@ -193,6 +194,11 @@ class StringBodyField(PayloadField):
         self.data_type = STRING
         self.need_base64 = need_base64
         self.key = key
+        self.encoding = encoding
+        self.format = format
+        self.compress = compress
+        self.status = status
+        self.text = b"value"
 
     @property
     def test_value(self):
@@ -203,11 +209,12 @@ class StringBodyField(PayloadField):
 
 
 class AudioBodyField(PayloadField):
-    def __init__(self, key, path=""):
+    def __init__(self, key, path="", encoding="", format="plain", compress="raw", status=3):
         super(AudioBodyField, self).__init__(key, AUDIO)
         self.data_type = AUDIO
         self.path = self._check_path(path)
         self.key = key
+        self.audio = b" "
 
     @property
     def test_value(self):
@@ -220,18 +227,21 @@ class AudioBodyField(PayloadField):
 
 
 class ImageBodyField(PayloadField):
-    def __init__(self, key, path="", need_base64=False):
+    def __init__(self, key, path="", need_base64=True, encoding="jpg", status=3):
         super(ImageBodyField, self).__init__(key, IMAGE)
         self.need_base64 = need_base64
         self.data_type = IMAGE
         self.path = self._check_path(path)
         self.key = key
+        self.encoding = encoding
+        self.status = status
+        self.image = self.test_value
 
     @property
     def test_value(self):
         if not os.path.exists(self.path):
             log.warn("%s not exist.. check " % self.path)
-            return b""
+            return b"<your image base64 here>"
 
         with open(self.path, "rb") as f:
             content = f.read()
@@ -406,14 +416,87 @@ class Metaclass(type):
 class WrapperBase(metaclass=Metaclass):
     config = {}
 
-    def __init__(self):
+    def __init__(self, legacy=True, is_aipaas=True, keep_schema_default_value=True):
         # 仅测试调试用
         self.inputs_test_values = {}
         self.params_test_values = {}
         self.respData = []
         self.session = SessionManager()
+        self.legacy = legacy
+        self.is_aipaas = is_aipaas
+        self.keep_schema_default_value = keep_schema_default_value
 
     def schema(self):
+        '''传统模式默认: 基于模板生成schema'''
+        if self.legacy:
+            return self.schema_legacy()
+        else:
+            return self.schema_v2()
+
+    def schema_v2(self):
+        '''
+        基于pydantic 生成 schema
+        '''
+        args = self._parse_mapping()
+
+        svcId = args.get("serviceId")
+        inputs_fields, inputs_payloads = self._parse_inputs_v2()
+        accepts_fields, accepts_payloads = self._parse_outputs_v2()
+        ParamModel = self._parse_params_v2(svcId, accepts_payloads)
+
+        # check meta input output
+        for k, v in inputs_fields.items():
+            Input.add_key_datatype(k, v.get('dataType'))
+
+        _in = Input()
+        for k, v in accepts_fields.items():
+            Accept.add_key_datatype(k, v.get('dataType'))
+        _accept = Accept()
+        svcdict = {svcId: {"input": _in, "accept": _accept}}
+
+        args.update(svcdict)
+        MetaModel = create_model(
+            'MetaModel',
+            __base__=Meta,
+            **args,
+        )
+
+        # prepare schemainput
+        ## 1. payload
+        tmp = dict()
+        for k, v in inputs_payloads.items():
+            tmp[k] = v
+
+        PayloadModel = create_model(
+            'PayloadModel',
+            __base__=Payload,
+            **tmp
+        )
+        sin = {"payload": PayloadModel(), "header": Header(appid="11", status="3"), "parameter": ParamModel()}
+        SchemaInputModel = create_model(
+            'SchemaInputModel',
+            **sin,
+            __base__=BaseModel
+        )
+        _sin = SchemaInputModel()
+
+        # 2. preprare output palyoad
+        OutputPayloadModel = create_model(
+            'OutputPayloadModel',
+            __base__=BaseModel,
+            **accepts_payloads
+        )
+        _output_payload = {"payload": OutputPayloadModel()}
+        OutputModel = create_model("OutputModel",
+                                   __base__=BaseModel, **_output_payload)
+
+        # return  _sin.schema_json()
+        sc = AIschema(meta=MetaModel(), schemainput=SchemaInputModel(), schemaoutput=OutputModel(),
+                      is_aipaas=self.is_aipaas,keep_default=self.keep_schema_default_value)
+        log.info("Generating V2 Schema....")
+        return json.dumps(sc.json())
+
+    def schema_legacy(self):
         s = Template(tpl)
         kwargs = self._parse_mapping()
         inputs_fields, inputs_body = self._parse_inputs()
@@ -430,8 +513,8 @@ class WrapperBase(metaclass=Metaclass):
         try:
             msg = json.loads(s.render(**kwargs))
         except Exception as e:
-            raise AttributeError("cant' format to schma %s" % str(e))
-        log.info("Genrating Schema...")
+            raise AttributeError("cant' format to schema %s" % str(e))
+        log.info("Generating Legacy Schema...")
         data = json.dumps(msg, indent=4, ensure_ascii=False)
         return data
 
@@ -456,6 +539,54 @@ class WrapperBase(metaclass=Metaclass):
 
                 inputs_payloads.update(self._get_text_accepts_payload(inp.key))
         return inputs_fields, inputs_payloads
+
+    def _parse_inputs_v2(self):
+        inputs = self.__mappings__.get('inputs', [])
+        if not inputs:
+            raise Exception("your must specify at least one input field!")
+        inputs_payloads = {}
+        inputs_fields = {}
+        for inp in inputs:
+            if inp.data_type == IMAGE:
+                inputs_fields.update({inp.key: {"dataType": "image"}})
+                self.inputs_test_values.update({inp.key: inp.test_value})
+                i = ImageField(encoding=inp.encoding, status=inp.status, image=inp.image)
+                inputs_payloads.update({inp.key: i})
+            elif inp.data_type == AUDIO:
+                inputs_fields.update({inp.key: {"dataType": "audio"}})
+                self.inputs_test_values.update({inp.key: inp.test_value})
+                i = AudioField(encoding=inp.encoding, status=inp.status, audio=inp.audio)
+                inputs_payloads.update({inp.key: i})
+            elif inp.data_type == STRING:
+                inputs_fields.update({inp.key: {"dataType": "text"}})
+                self.inputs_test_values.update({inp.key: inp.test_value})
+                i = TextField(encoding=inp.encoding, status=inp.status, text=inp.text, compress=inp.compress,
+                              format=inp.format)
+                inputs_payloads.update({inp.key: i})
+        return inputs_fields, inputs_payloads
+
+    def _parse_outputs_v2(self):
+        accepts = self.__mappings__.get('accepts', [])
+        if not accepts:
+            raise Exception("your must specify at least one accepts field!")
+        accepts_payloads = {}
+        accepts_fields = {}
+        for acc in accepts:
+            if acc.data_type == IMAGE:
+                accepts_fields.update({acc.key: {"dataType": "image"}})
+                i = ImageField(encoding=acc.encoding, status=acc.status, image=acc.image)
+                accepts_payloads.update({acc.key: i})
+            elif acc.data_type == AUDIO:
+                accepts_fields.update({acc.key: {"dataType": "audio"}})
+                i = AudioField(encoding=acc.encoding, status=acc.status, image=acc.audio)
+                accepts_payloads.update({acc.key: i})
+            elif acc.data_type == STRING:
+                accepts_fields.update({acc.key: {"dataType": "text"}})
+                i = TextField(encoding=acc.encoding, status=acc.status, text=acc.text, compress=acc.compress,
+                              format=acc.format)
+                accepts_payloads.update({acc.key: i})
+            ## binary support todo
+        return accepts_fields, accepts_payloads
 
     def _parse_outputs(self):
         accepts = self.__mappings__.get('accepts', [])
@@ -482,15 +613,20 @@ class WrapperBase(metaclass=Metaclass):
         route = self.__mappings__.get("route", "/{}/private/{}".format(self.version, self.serviceId))
         sub = self.__mappings__.get("sub", "ase")
         hosts = self.__mappings__.get("hosts", "api.xf-yun.com")
+        webgate_type = self.__mappings__.get("webgate_type", 0)
         args = dict()
         args['serviceId'] = self.serviceId
-        args['service'] = json.dumps([self.serviceId])
+        if self.legacy:
+            args['service'] = json.dumps([self.serviceId])
+        else:
+            args['service'] = [self.serviceId]
         args['version'] = self.version
         args['call'] = call
         args['call_type'] = call_type
         args['route'] = route
         args['sub'] = sub
         args['hosts'] = hosts
+        args['webgate_type'] = webgate_type
         return args
 
     def _parse_params(self):
@@ -504,6 +640,32 @@ class WrapperBase(metaclass=Metaclass):
             self.params_test_values.update()
             self.params_test_values[param.key] = param.test_value
         return params_fields, required_params
+
+    def _parse_params_v2(self, serviceId, accepets_payloads):
+        params = self.__mappings__.get('params', [])
+
+        _dict = {}
+        for param in params:
+            if param.required:
+                _dict[param.key] = param.test_value
+            else:
+                _dict[param.key] = param.test_value
+        _dict = {}
+
+        for k, v in accepets_payloads.items():
+            _dict[k] = v
+
+        TmpModel = create_model("TempModel", __base__=BaseModel, **_dict)
+
+        svc_dict = {}
+        svc_dict[serviceId] = TmpModel()
+
+        Paramodel = create_model(
+            'Paramodel',
+            __base__=BaseModel,
+            **svc_dict,
+        )
+        return Paramodel
 
     def _parse_payload(self):
         pass

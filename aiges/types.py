@@ -53,3 +53,7 @@ Once = DataOnce
 THREAD_MODE = "thread" # 默认模式，
 
 PROCESS_MODE = "process" # 当前不可用
+
+
+# for debug
+GenericAlias = type(list[int])

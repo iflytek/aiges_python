@@ -1,0 +1,236 @@
+{
+    "meta": {
+        "serviceId": "s6d69bb68",
+        "version": "v1.0",
+        "service": [
+            "s6d69bb68"
+        ],
+        "sub": "ase",
+        "call": "atmos-low-concurrency",
+        "call_type": "0",
+        "webgate_type": 0,
+        "hosts": "api.xf-yun.com",
+        "route": "/v1/private/s6d69bb68",
+        "s6d69bb68": {
+            "input": {
+                "input_text": {
+                    "dataType": "text"
+                }
+            },
+            "accept": {
+                "output_imgs": {
+                    "dataType": "image"
+                }
+            }
+        },
+        "routeKey": []
+    },
+    "schemainput": {
+        "type": "object",
+        "properties": {
+            "header": {
+                "type": "object",
+                "properties": {
+                    "directEngIp": {
+                        "type": "string",
+                        "minLength": 0,
+                        "maxLength": 1024
+                    },
+                    "app_id": {
+                        "type": "string",
+                        "minLength": 0,
+                        "maxLength": 50
+                    },
+                    "uid": {
+                        "type": "string",
+                        "minLength": 0,
+                        "maxLength": 50
+                    },
+                    "did": {
+                        "type": "string",
+                        "minLength": 0,
+                        "maxLength": 50
+                    },
+                    "imei": {
+                        "type": "string",
+                        "minLength": 0,
+                        "maxLength": 50
+                    },
+                    "imsi": {
+                        "type": "string",
+                        "minLength": 0,
+                        "maxLength": 50
+                    },
+                    "mac": {
+                        "type": "string",
+                        "minLength": 0,
+                        "maxLength": 50
+                    },
+                    "net_type": {
+                        "type": "string",
+                        "enum": [
+                            "wifi",
+                            "2G",
+                            "3G",
+                            "4G",
+                            "5G"
+                        ]
+                    },
+                    "net_isp": {
+                        "type": "string",
+                        "enum": [
+                            "CMCC",
+                            "CUCC",
+                            "CTCC",
+                            "other"
+                        ]
+                    },
+                    "status": {
+                        "type": "integer",
+                        "enum": [
+                            3
+                        ]
+                    },
+                    "request_id": {
+                        "type": "string",
+                        "minLength": 0,
+                        "maxLength": 64
+                    },
+                    "res_id": {
+                        "type": "string",
+                        "minLength": 0,
+                        "maxLength": 1024
+                    },
+                    "data_cleaner_ttl": {
+                        "type": "string",
+                        "minLength": 0,
+                        "maxLength": 13
+                    },
+                    "patch_id": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "maxLength": 1024
+                        }
+                    },
+                    "scene": {
+                        "type": "string",
+                        "minLength": 0,
+                        "maxLength": 32
+                    },
+                    "live_push_url": {
+                        "type": "string",
+                        "minLength": 0,
+                        "maxLength": 200
+                    }
+                },
+                "required": [
+                    "app_id",
+                    "status"
+                ]
+            },
+            "parameter": {
+                "type": "object",
+                "properties": {
+                    "s6d69bb68": {
+                        "type": "object",
+                        "properties": {
+                            "output_imgs": {
+                                "type": "object",
+                                "properties": {
+                                    "encoding": {
+                                        "type": "string",
+                                        "enum": [
+                                            "jpg",
+                                            "jpeg",
+                                            "png",
+                                            "bmp",
+                                            "webp",
+                                            "tiff"
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "required": []
+                    }
+                }
+            },
+            "payload": {
+                "type": "object",
+                "properties": {
+                    "input_text": {
+                        "type": "object",
+                        "properties": {
+                            "encoding": {
+                                "type": "string",
+                                "enum": [
+                                    "utf8",
+                                    "gb2312",
+                                    "gbk"
+                                ]
+                            },
+                            "compress": {
+                                "type": "string",
+                                "enum": [
+                                    "raw",
+                                    "gzip"
+                                ]
+                            },
+                            "format": {
+                                "type": "string",
+                                "enum": [
+                                    "plain",
+                                    "json",
+                                    "xml"
+                                ]
+                            },
+                            "status": {
+                                "type": "integer",
+                                "enum": [
+                                    3
+                                ]
+                            },
+                            "text": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1048576
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "schemaoutput": {
+        "type": "object",
+        "properties": {
+            "payload": {
+                "type": "object",
+                "properties": {
+                    "output_imgs": {
+                        "type": "object",
+                        "properties": {
+                            "encoding": {
+                                "type": "string",
+                                "enum": [
+                                    "jpg",
+                                    "jpeg",
+                                    "png",
+                                    "bmp",
+                                    "webp",
+                                    "tiff"
+                                ]
+                            },
+                            "image": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 10485760
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
