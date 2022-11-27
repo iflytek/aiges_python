@@ -17,8 +17,6 @@
 #  Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
 #  Vestibulum commodo. Ut rhoncus gravida arcu.
 import json
-import pprint
-import sys
 
 try:
     from aiges_embed import ResponseData, Response, DataListNode, DataListCls, SessionCreateResponse  # c++
@@ -35,8 +33,9 @@ from aiges.sdk import WrapperBase, \
 from aiges.utils.log import log
 from aiges.types import *
 
+
 class UserRequest(object):
-    '''
+    """
     定义请求类:
      params:  params 开头的属性代表最终HTTP协议中的功能参数parameters部分，
               params Field支持 StringParamField，
@@ -44,7 +43,7 @@ class UserRequest(object):
               params 属性多用于协议中的控制字段，请求body字段不属于params范畴
 
      input:    input字段多用与请求数据段，即body部分，当前支持 ImageBodyField, StringBodyField, 和AudioBodyField
-    '''
+    """
 
     params1 = StringParamField(key="p1", enums=["3", "eee"], value='3')
     params2 = StringParamField(key="p2", maxLength=44, required=True)
