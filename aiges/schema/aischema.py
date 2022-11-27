@@ -189,18 +189,22 @@ class TextField(BaseModel):
     format: TextFormat = Field(..., alias="format")
     status: DataStatus = Field(..., alias="status")
     text: str = Field(None, min_length=1, max_length=10485760)
+    data_type: Optional[str] =Field("text")
 
 
 class ImageField(BaseModel):
     encoding: ImageEncoding = Field(None, alias="encoding")
     status: DataStatus = Field(None, alias="status")
     image: str = Field(None, min_length=1, max_length=10485760)
+    data_type: Optional[str] =Field("image")
 
 
 class AudioField(BaseModel):
     encoding: AudioEncoding = Field(None, alias="encoding")
     status: DataStatus = Field(None, alias="status")
     audio: str = Field(None, min_length=1, max_length=10485760)
+    data_type: Optional[str] =Field("audio")
+
 
 
 class Payload(AIModel):

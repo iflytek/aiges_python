@@ -33,47 +33,45 @@ from aiges.sdk import WrapperBase, \
     ImageBodyField, \
     StringBodyField
 from aiges.utils.log import log
-
-'''
-定义请求类:
- params:  params 开头的属性代表最终HTTP协议中的功能参数parameters部分， 
-          params Field支持 StringParamField，
-          NumberParamField，BooleanParamField,IntegerParamField，每个字段均支持枚举
-          params 属性多用于协议中的控制字段，请求body字段不属于params范畴
-
- input:    input字段多用与请求数据段，即body部分，当前支持 ImageBodyField, StringBodyField, 和AudioBodyField
-'''
-
+from aiges.types import *
 
 class UserRequest(object):
+    '''
+    定义请求类:
+     params:  params 开头的属性代表最终HTTP协议中的功能参数parameters部分，
+              params Field支持 StringParamField，
+              NumberParamField，BooleanParamField,IntegerParamField，每个字段均支持枚举
+              params 属性多用于协议中的控制字段，请求body字段不属于params范畴
+
+     input:    input字段多用与请求数据段，即body部分，当前支持 ImageBodyField, StringBodyField, 和AudioBodyField
+    '''
+
     params1 = StringParamField(key="p1", enums=["3", "eee"], value='3')
     params2 = StringParamField(key="p2", maxLength=44, required=True)
     params3 = StringParamField(key="p3", maxLength=44, required=False)
 
-    input1 = ImageBodyField(key="data", path="test_data/test.png")
-    input3 = ImageBodyField(key="data2", path="test_data/test.png")
+    input1 = ImageBodyField(key="data", path="aiges/test_data/test.png")
+    input3 = ImageBodyField(key="data2", path="aiges/test_data/test.png")
     input2 = StringBodyField(key="switch", value=b"")
 
 
-'''
-定义响应类:
- accepts:  accepts代表响应中包含哪些字段, 以及数据类型
-
- input:    input字段多用与请求数据段，即body部分，当前支持 ImageBodyField, StringBodyField, 和AudioBodyField
-'''
-
-
 class UserResponse(object):
+    """
+    定义响应类:
+     accepts:  accepts代表响应中包含哪些字段, 以及数据类型
+
+     input:    input字段多用与请求数据段，即body部分，当前支持 ImageBodyField, StringBodyField, 和AudioBodyField
+    """
+
     accept1 = StringBodyField(key="boxes")
     accept2 = StringBodyField(key="boxes2")
 
 
-'''
-用户实现， 名称必须为Wrapper, 必须继承SDK中的 WrapperBase类
-'''
-
-
 class Wrapper(WrapperBase):
+    """
+    用户实现， 名称必须为Wrapper, 必须继承SDK中的 WrapperBase类
+    """
+
     serviceId = "mmocr"
     version = "backup.0"
     requestCls = UserRequest()
@@ -138,7 +136,7 @@ class Wrapper(WrapperBase):
         # return r.response_err(100)
         l = ResponseData()
         l.key = "ccc"
-        l.status = 1
+        l.status = DataOnce
         d = open("test_data/test.png", "rb").read()
         d = "cc"
         l.len = len(d)
@@ -225,6 +223,8 @@ class Wrapper(WrapperBase):
 if __name__ == '__main__':
     m = Wrapper(legacy=False, is_aipaas=True, keep_schema_default_value=False)
     c = m.schema()
-    #f = open("out.json", "w")
-    #print(json.dump(c, f, indent=4))
+    f = open("out.json", "w")
+    c = json.loads(c)
+    print(type(c))
+    print(json.dump(c, f, indent=4))
     # m.run()

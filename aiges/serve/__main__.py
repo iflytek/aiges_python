@@ -108,7 +108,7 @@ class WrapperServiceServicer(aiges_inner_pb2_grpc.WrapperServiceServicer):
         try:
             interface_file = importlib.import_module(wrapper_module)
             user_wrapper_cls = getattr(interface_file, wrapper_class)
-            self.userWrapperObject = user_wrapper_cls(legacy=False, is_aipaas=True, keep_schema_default_value=False)
+            self.userWrapperObject = user_wrapper_cls(legacy=False, is_aipaas=True, keep_schema_default_value=True)
             log.info("User Wrapper newed Success.. starting call user init functions...")
             ret = self.userWrapperObject.wrapperInit(request.config)
             if ret != 0:

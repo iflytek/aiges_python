@@ -58,7 +58,7 @@ def resolve_schema(schema, is_aipaas=False, keep_default=True):
 def _aipaas_default(schema, modify=True):
     if modify:
         default = schema.pop("default")
-        schema['defautValue'] = default
+        schema['defaultVal'] = default
     else:
         del schema['default']
 

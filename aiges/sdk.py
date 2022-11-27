@@ -472,6 +472,7 @@ class WrapperBase(metaclass=Metaclass):
             __base__=Payload,
             **tmp
         )
+        # todo:  appid status parameterize
         sin = {"payload": PayloadModel(), "header": Header(appid="11", status="3"), "parameter": ParamModel()}
         SchemaInputModel = create_model(
             'SchemaInputModel',
@@ -647,11 +648,13 @@ class WrapperBase(metaclass=Metaclass):
         _dict = {}
         for param in params:
             if param.required:
+                # todo param required should do here
                 _dict[param.key] = param.test_value
             else:
                 _dict[param.key] = param.test_value
         _dict = {}
 
+        # 这里是处理 accept parameters expect
         for k, v in accepets_payloads.items():
             _dict[k] = v
 

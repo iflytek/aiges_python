@@ -31,7 +31,6 @@
 #  Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
 #  Vestibulum commodo. Ut rhoncus gravida arcu.
 
-
 STRING = 0
 AUDIO = 1
 IMAGE = 2
@@ -57,3 +56,4 @@ PROCESS_MODE = "process" # 当前不可用
 
 # for debug
 GenericAlias = type(list[int])
+
