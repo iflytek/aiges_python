@@ -7,9 +7,10 @@ from aiges.utils.log import log
 from aiges.cmd.create import *  # 初始化项目目录
 from aiges.cmd.package import *
 
+
 class AigesCliManager(cli.Application):
     # 程序名称
-    PROGNAME = "aiges sdk的工具包" | colors.green
+    PROGNAME = "aiges sdk工具包" | colors.green
     VERSION = "1.0" | colors.blue
     DESCRIPTION = "kahn的CLI集合"
     USAGE = "aiges ai套件工具"
@@ -30,7 +31,7 @@ class AigesCliManager(cli.Application):
 
 
 @AigesCliManager.subcommand("create")  # type: ignore
-class ManagerCreate(AigesCliManager):
+class ManagerCreate(cli.Application):
     DESCRIPTION = "Aiges create project..."
 
     parent: AigesCliManager
@@ -69,7 +70,7 @@ class ManagerCreate(AigesCliManager):
 
 
 @AigesCliManager.subcommand("pack")  # type: ignore
-class ManagerPack(AigesCliManager):
+class ManagerPack(cli.Application):
     DESCRIPTION = "Aiges pack wrapper directory..."
 
     parent: AigesCliManager
@@ -106,6 +107,32 @@ class ManagerPack(AigesCliManager):
         self.targeted()
         log.info("Done")
 
+
+@AigesCliManager.subcommand("config")  # type: ignore
+class ManagerConfig(cli.Application):
+    DESCRIPTION = "Aiges Config Helper..."
+
+    def main(self):
+        # self.targeted()
+        log.info("Done")
+
+
+@ManagerConfig.subcommand("set")
+class ConfigSet(ManagerConfig):
+    parent: ManagerConfig
+
+    def main(self, *args, **kwargs):
+        log.info("setting config ...")
+        print(args)
+        print(kwargs)
+
+@ManagerConfig.subcommand("get")
+class ConfigGet(ManagerConfig):
+    parent: ManagerConfig
+
+    def main(self, *args, **kwargs):
+        log.info("Getting config ...")
+        print(args)
+
 if __name__ == '__main__':
     AigesCliManager.run()
-

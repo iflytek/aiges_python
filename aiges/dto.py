@@ -33,7 +33,7 @@
 from typing import Dict, Tuple, List, AnyStr
 import json
 
-from aiges.types import *
+from aiges.core.types import *
 
 
 

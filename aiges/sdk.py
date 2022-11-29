@@ -16,7 +16,7 @@ from jinja2 import Template
 import json
 import os
 from aiges.utils.log import log
-from aiges.types import *
+from aiges.core.types import *
 import threading
 from pprint import pprint
 from aiges.stream import *

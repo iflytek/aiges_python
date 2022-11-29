@@ -31,7 +31,7 @@ from aiges.sdk import WrapperBase, \
     ImageBodyField, \
     StringBodyField
 from aiges.utils.log import log
-from aiges.types import *
+from aiges.core.types import *
 
 
 class UserRequest(object):

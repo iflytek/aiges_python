@@ -33,7 +33,7 @@
 import threading
 from threading import Lock
 from multiprocessing import Manager, Process
-import aiges.types as ai_types
+import aiges.core.types as ai_types
 import time
 import os
 import queue
