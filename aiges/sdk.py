@@ -493,7 +493,7 @@ class WrapperBase(metaclass=Metaclass):
 
         # return  _sin.schema_json()
         sc = AIschema(meta=MetaModel(), schemainput=SchemaInputModel(), schemaoutput=OutputModel(),
-                      is_aipaas=self.is_aipaas,keep_default=self.keep_schema_default_value)
+                      is_aipaas=self.is_aipaas, keep_default=self.keep_schema_default_value)
         log.info("Generating V2 Schema....")
         return json.dumps(sc.json())
 
@@ -911,6 +911,11 @@ class WrapperBase(metaclass=Metaclass):
             # check Response data 类型
             if not isinstance(d.data, memoryview) and not isinstance(d.data, bytes):
                 log.error("ResponseData 's data field must be  bytes or memoryview")
+                return False
+            if d.len != len(d.data):
+                log.error(
+                    "ResponseData: key: %s 's len is mismatch,Please Check! expect %d, actual: %d" % (
+                    d.key, d.len, len(d.data)))
                 return False
 
         # check 响应key是否重复

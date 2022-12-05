@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aiges"
-version = "0.6.0"
+version = "0.6.3"
 description = "A module for test aiges's python wrapper.py"
 authors = ["maybaby <ybyang7@iflytek.com>"]
 license = "Apache License Version 2.0"
@@ -13,6 +13,9 @@ grpcio-health-checking = ">=1.50.0"
 grpcio = ">=1.50.0"
 grpcio-tools = ">=1.50.0"
 plumbum = ">=1.7.0"
+flask_restx = ">=1.0.0"
+jsonref = ">=1.0.0"
+pydantic = ">=1.8"
 [tool.poetry.dev-dependencies]
 jinja2 = ">=2.0"
 [build-system]
