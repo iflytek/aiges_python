@@ -165,6 +165,8 @@ class StreamHandleThread(threading.Thread):
 
     def __init__(self, session_thread, in_q, out_q):
         threading.Thread.__init__(self)
+        self.setDaemon(True)
+        self.is_stopping = False
         self.session_thread = session_thread  # 为worker线程的父线程
         self.in_q = in_q
         self.out_q = out_q
@@ -172,10 +174,13 @@ class StreamHandleThread(threading.Thread):
     def init_model(self, *args, **kwarg):
         raise NotImplementedError("implementhis")
 
+    def stop(self):
+        self.is_stopping = True
+
     def run(self):
         # 此方法需要子类重写
         self.init_model(self.session_thread.handle)
-        while True:
+        while not self.is_stopping:
             time.sleep(100)
             # req = self.in_q.get()
             # if req.list[0].status == 2:
@@ -233,10 +238,9 @@ class WorkerThread(threading.Thread):
     def __init__(self, handle):
         threading.Thread.__init__(self)
         self.handle = handle  # handle标识，此处指的的是线程handle标识
-
-
+        self.setDaemon(True)
         self.sid = ""  # 会话ID,由外部请求输入
-
+        self.is_stopping = False
         self.in_q = queue.Queue()  # 定义输入工作线程队列
         self.out_q = queue.Queue()  # 异步callback获取结果时，此队列无用，仅同步取结果时有用
         self.is_idle = True  # 标明当前线程是否空闲，空闲则可以被获取
@@ -280,6 +284,9 @@ class WorkerThread(threading.Thread):
         if issubclass(self.StreamHandleThreadClass, StreamHandleThread):
             print("handle thread set up ok...")
         self.StreamHandleThreadClass = cls
+
+    def stop(self):
+        self.is_stopping = True
 
     def run(self):
         pr = self.StreamHandleThreadClass(self, self.in_q, self.out_q)

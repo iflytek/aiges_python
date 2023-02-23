@@ -1,16 +1,17 @@
 # coding: utf-8
 
 ## const default value
-import queue
+import sys
 
 import time
 import base64
 
 #
 try:
-    from aiges_embed import ResponseData, Response, DataListNode, DataListCls, SessionCreateResponse
+    from aiges_embed import ResponseData, Response, DataListNode, DataListCls, SessionCreateResponse, callback
 except:
-    from aiges.dto import Response, ResponseData, DataListNode, DataListCls, DataAudio, SessionCreateResponse
+    from aiges.dto import Response, ResponseData, DataListNode, DataListCls, DataAudio, SessionCreateResponse, callback, \
+        init_rq
 
 from jinja2 import Template
 import json
@@ -24,6 +25,11 @@ import queue
 from threading import Lock
 from multiprocessing import Process
 from aiges.schema.aischema import *
+from aiges.gradio_util.component import GradioComponent
+import gradio as gr
+from pydantic import Field as PField
+from pydantic.fields import FieldInfo
+from pydantic import ConstrainedStr, ConstrainedInt, StrictStr, StrictInt, conint, constr
 
 SUB = "ase"
 CALL = "atmos"
@@ -142,6 +148,8 @@ class Field(object):
     def __init__(self, key, data_type):
         self.key = key
         self.data_type = data_type
+        self.description = ""
+        self.title = ''
 
     def __str__(self):
         return '<%s:%s>' % (self.__class__.__name__, self.key)
@@ -227,7 +235,7 @@ class AudioBodyField(PayloadField):
 
 
 class ImageBodyField(PayloadField):
-    def __init__(self, key, path="", need_base64=True, encoding="jpg", status=3):
+    def __init__(self, key, path="", need_base64=False, encoding="jpg", status=3):
         super(ImageBodyField, self).__init__(key, IMAGE)
         self.need_base64 = need_base64
         self.data_type = IMAGE
@@ -252,7 +260,7 @@ class ImageBodyField(PayloadField):
 
 
 class StringParamField(ParamField):
-    def __init__(self, key, minLength=0, maxLength=50, enums=[], required=False, value=""):
+    def __init__(self, key, minLength=0, maxLength=1024, enums=[], required=False, value="", description="", title=""):
         self.key = key
         self.data_type = "string"
         self.max_length = maxLength
@@ -260,6 +268,8 @@ class StringParamField(ParamField):
         self.value = value
         self.enums = enums
         self.required = required
+        self.description = description
+        self.title = title
 
     def _schema(self):
         # todo enhance
@@ -289,6 +299,7 @@ class StringParamField(ParamField):
 
 class NumberParamField(ParamField):
     def __init__(self, key, minimum=0, maximum=100, enums=[], required=False, value=0):
+        super(NumberParamField, self).__init__(key, "number")
         self.key = key
         self.enums = enums
         self.data_type = "number"
@@ -360,12 +371,12 @@ class IntegerParamField(ParamField):
 
 
 class BooleanParamField(ParamField):
-    def __init__(self, key, default=False, required=False):
+    def __init__(self, key, title="", default=False, required=False):
         self.key = key
         self.data_type = "boolean"
-        self.default = default
         self.required = required
-        self.test_value = default
+        self.default = default
+        self.title = title
 
     def _schema(self):
         # todo enhance
@@ -375,6 +386,10 @@ class BooleanParamField(ParamField):
         return {self.key: {
             "type": self.data_type,
         }}
+
+    @property
+    def test_value(self):
+        return self.default
 
 
 # metaclass是类的模板，所以必须从`type`类型派生：
@@ -425,6 +440,13 @@ class WrapperBase(metaclass=Metaclass):
         self.legacy = legacy
         self.is_aipaas = is_aipaas
         self.keep_schema_default_value = keep_schema_default_value
+        self._schema = None
+
+    def gradio(self):
+        if self._schema:
+            g = GradioComponent(self._schema)
+            g.run()
+        pass
 
     def schema(self):
         '''传统模式默认: 基于模板生成schema'''
@@ -495,6 +517,7 @@ class WrapperBase(metaclass=Metaclass):
         sc = AIschema(meta=MetaModel(), schemainput=SchemaInputModel(), schemaoutput=OutputModel(),
                       is_aipaas=self.is_aipaas, keep_default=self.keep_schema_default_value)
         log.info("Generating V2 Schema....")
+        self._schema = sc
         return json.dumps(sc.json())
 
     def schema_legacy(self):
@@ -647,26 +670,41 @@ class WrapperBase(metaclass=Metaclass):
 
         _dict = {}
         for param in params:
-            if param.required:
-                # todo param required should do here
-                _dict[param.key] = param.test_value
-            else:
-                _dict[param.key] = param.test_value
-        _dict = {}
+            if isinstance(param, StringParamField):
+                if param.required:
+                    _dict[param.key] = (str, PField(default="cc", title='Foo', max_length=10, min_length=0))
+                else:
+                    _dict[param.key] = (Optional[str], PField(title='Foo', max_length=10, min_length=0))
+            elif isinstance(param, NumberParamField):
+                if param.required:
+                    _dict[param.key] = (int, PField(title=param.title, gt=param.minimum, le=param.maximum))
+                else:
+                    _dict[param.key] = (Optional[int], PField(title=param.title, gt=param.minimum, le=param.maximum))
+            elif isinstance(param, BooleanParamField):
+                if param.required:
+                    _dict[param.key] = (bool, PField(title=param.title, default=param.default))
+                else:
+                    _dict[param.key] = (Optional[bool], PField(title=param.title, default=param.default))
+
+            # if param.required:
+            #     # todo param required should do here
+            #     _dict[param.key] = param.test_value
+            # else:
+            #     _dict[param.key] = param.test_value
+
+        a_dict = {}
 
         # 这里是处理 accept parameters expect
         for k, v in accepets_payloads.items():
-            _dict[k] = v
+            a_dict[k] = v
 
-        TmpModel = create_model("TempModel", __base__=BaseModel, **_dict)
-
-        svc_dict = {}
-        svc_dict[serviceId] = TmpModel()
+        TmpModel = create_model("TempModel", __base__=BaseModel, **a_dict)
+        _dict[serviceId] = TmpModel()
 
         Paramodel = create_model(
             'Paramodel',
             __base__=BaseModel,
-            **svc_dict,
+            **_dict,
         )
         return Paramodel
 
@@ -880,14 +918,14 @@ class WrapperBase(metaclass=Metaclass):
         保留接口
     '''
 
-    def wrapperWrite(cls, handle: str, datas: []) -> int:
+    def wrapperWrite(cls, handle: str, datas: [], sid: str) -> int:
         return 0
 
     '''
         保留接口
     '''
 
-    def wrapperRead(cls, handle: str) -> []:
+    def wrapperRead(cls, handle: str, sid: str) -> []:
         return []
 
     def wrapperDestroy(cls, handle: str) -> int:
@@ -915,7 +953,7 @@ class WrapperBase(metaclass=Metaclass):
             if d.len != len(d.data):
                 log.error(
                     "ResponseData: key: %s 's len is mismatch,Please Check! expect %d, actual: %d" % (
-                    d.key, d.len, len(d.data)))
+                        d.key, d.len, len(d.data)))
                 return False
 
         # check 响应key是否重复
@@ -923,7 +961,7 @@ class WrapperBase(metaclass=Metaclass):
         set_keys = set(keys)
         log.info("response keys: %s", str(keys))
         if not len(keys) == len(set_keys):
-            log.error("response list keys must be unique...")
+            log.error("response list keys must be u nique...")
             log.error("invalid keys %s" % str(keys))
             return False
 
@@ -972,5 +1010,38 @@ class WrapperBase(metaclass=Metaclass):
             self.wrapperError(-1)
 
     def run_stream(self):
-        raise NotImplementedError("Not implement, will be ok next verion (maybe in v0.5.0+)")
-        pass
+        q = init_rq()
+        # 1. 模拟调用初始化引擎
+        #  传入配置当前模拟为空
+        self.wrapperInit(self.config)
+        # 2. 准备wrapperOnceExec需要的数据
+        inputs_fields, inputs_body = self._parse_inputs()
+
+        params_fields, required_params = self._parse_params()
+        params = self.params_test_values
+        # 2. 模拟流式创建会话
+        req = DataListCls()
+        tmp = []
+        for key, value in self.inputs_test_values.items():
+            node = DataListNode()
+            node.key = key
+            node.data = value
+            node.len = len(value)
+            typeStr = inputs_fields[key]["dataType"]
+            node.type = type_map.get(typeStr)
+            tmp.append(node)
+
+        req.list = tmp
+
+        sid = "test-111111"
+        sb = self.wrapperCreate(params, sid)
+        print("get sb 's handle ,%s", sb.handle)
+        self.wrapperWrite(sb.handle, req, sid)
+        is_stopping = False
+        while not is_stopping:
+            r = q.get()
+            for i in r.list:
+                if i.status == DataEnd:
+                    print("end!!!!")
+                    is_stopping = True
+

@@ -24,10 +24,13 @@ except:
     from aiges.dto import Response, ResponseData, DataListNode, DataListCls, SessionCreateResponse
 
 from aiges.sdk import SessionManager
+from aiges.stream import StreamHandleThread
 
 import hashlib
 from aiges.sdk import WrapperBase, \
     StringParamField, \
+    NumberParamField, \
+    BooleanParamField, \
     ImageBodyField, \
     StringBodyField
 from aiges.utils.log import log
@@ -45,13 +48,13 @@ class UserRequest(object):
      input:    input字段多用与请求数据段，即body部分，当前支持 ImageBodyField, StringBodyField, 和AudioBodyField
     """
 
-    params1 = StringParamField(key="p1", enums=["3", "eee"], value='3')
-    params2 = StringParamField(key="p2", maxLength=44, required=True)
-    params3 = StringParamField(key="p3", maxLength=44, required=False)
+    params1 = StringParamField(key="param1", enums=["3", "eee"], value='3')
+    params2 = BooleanParamField(key="param2", default=True, required=False)
+    params3 = NumberParamField(key="param3", maximum=44, required=False)
 
     input1 = ImageBodyField(key="data", path="aiges/test_data/test.png")
     input3 = ImageBodyField(key="data2", path="aiges/test_data/test.png")
-    input2 = StringBodyField(key="switch", value=b"")
+    input2 = StringBodyField(key="data3", value=b"")
 
 
 class UserResponse(object):
@@ -137,11 +140,11 @@ class Wrapper(WrapperBase):
         l.key = "ccc"
         l.status = DataOnce
         d = open("test_data/test.png", "rb").read()
-        d = "cc"
+        d = b"cc"
         l.len = len(d)
         l.data = d
         l.type = 0
-        r.list = [l, l, l]
+        r.list = [l, ]
         return r
 
     '''
@@ -212,7 +215,7 @@ class Wrapper(WrapperBase):
 
         l.key = "ccc"
         l.status = 1
-        d = "cccccc"
+        d = b"cccccc"
         l.len = len(d)
         l.data = d
         r.list = [l]
@@ -224,6 +227,6 @@ if __name__ == '__main__':
     c = m.schema()
     f = open("out.json", "w")
     c = json.loads(c)
-    print(type(c))
-    print(json.dump(c, f, indent=4))
-    # m.run()
+    json.dump(c, f, indent=4)
+    #m.gradio()
+    m.run()

@@ -30,11 +30,11 @@
 #  Etiam sed turpis ac ipsum condimentum fringilla. Maecenas magna.
 #  Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
 #  Vestibulum commodo. Ut rhoncus gravida arcu.
+import queue
 from typing import Dict, Tuple, List, AnyStr
 import json
 
 from aiges.core.types import *
-
 
 
 class DataListNode:
@@ -91,6 +91,22 @@ class SessionCreateResponse:
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__,
                           sort_keys=True, indent=4)
+
+result_Queue = None
+
+def init_rq():
+    global result_Queue
+    result_Queue = queue.Queue()
+    return result_Queue
+
+def callback(r: Response, sid: str):
+    global result_Queue
+    if not result_Queue:
+        raise Exception("you should execute init_rq first")
+    for nod in r.list:
+        print("sid %s, get callback: %s: len %d, type: %s, status: %s" % (
+        sid, nod.key, nod.len, Types[nod.type], Status[nod.status]))
+    result_Queue.put(r)
 
 if __name__ == '__main__':
     t = Response()

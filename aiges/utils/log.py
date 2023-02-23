@@ -31,6 +31,8 @@
 #  Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
 #  Vestibulum commodo. Ut rhoncus gravida arcu.
 import logging
+import os
+import sys
 
 fmt = '%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - %(levelname)s:  %(message)s'
 level = logging.DEBUG
@@ -42,6 +44,8 @@ log = logging.getLogger()
 log.setLevel(level)
 log.addHandler(ch)
 
+logpath = "/log/app"
+
 
 def getLogger(fmt=fmt, level=level, name="root"):
     global log
@@ -50,6 +54,26 @@ def getLogger(fmt=fmt, level=level, name="root"):
     ch.setFormatter(formatter)
     ch.setLevel(logging.INFO)
     log.setLevel(level)
+    for handler in log.handlers:
+        log.removeHandler(handler)
+    log.addHandler(ch)
+    return log
+
+
+def getFileLogger(fmt=fmt, level=level, name="python_wrapper"):
+    pt = sys.platform
+    if pt.lower() == "darwin":
+        logpath = "/tmp/log/app"
+
+    log = logging.getLogger(name)
+    if not os.path.isdir(logpath) or not os.path.exists(logpath):
+        os.makedirs(logpath)
+
+    lfname = os.path.join(logpath, name + ".log")
+    ch = logging.FileHandler(lfname)
+    formatter = logging.Formatter(fmt)
+    ch.setFormatter(formatter)
+    ch.setLevel(level)
     for handler in log.handlers:
         log.removeHandler(handler)
     log.addHandler(ch)

@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+# !/usr/bin/env python
 # coding:utf-8
 """ 
 @author: nivic ybyang7
 @license: Apache Licence 
-@file: types.py
-@time: 2022/09/15
+@file: pydantic_test
+@time: 2023/01/14
 @contact: ybyang7@iflytek.com
 @site:  
 @software: PyCharm 
@@ -30,39 +30,16 @@
 #  Etiam sed turpis ac ipsum condimentum fringilla. Maecenas magna.
 #  Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
 #  Vestibulum commodo. Ut rhoncus gravida arcu.
+from typing import Optional
 
-STRING = 0
-AUDIO = 1
-IMAGE = 2
-VIDEO = 3
+from pydantic import BaseModel, create_model, ConstrainedStr
+from pydantic.fields import FieldInfo
 
-DataText = 0  # 文本数据
-DataAudio = 1  # 音频数据
-DataImage = 2  # 图像数据
-DataVideo = 3  # 视频数据
+# DynamicFoobarModel = create_model('DynamicFoobarModel', foo=(str, FieldInfo(title='Foo',max_length=10,min_length=0)), bar=(int, FieldInfo(title='Foo',gt=0,lt=100)))
+DynamicFoobarModel = create_model('DynamicFoobarModel',
+                                  **{"foo": (str, FieldInfo(title='Foo', max_length=10, min_length=0),
+                                             ),
+                                     "bar": (Optional[int], FieldInfo(title='Foo', gt=0, le=100,))},
+                                  )
 
-Types = {
-    0: "text",
-    1: "audio",
-    2: "image",
-    3: "video"
-}
-
-DataBegin = 0  # 首数据
-DataContinue = 1  # 中间数据
-DataEnd = 2  # 尾数据
-DataOnce = 3  # 非会话单次输入输出
-
-Status = {
-    0: "begin",
-    1: "continue",
-    2: "end",
-    3: "once"
-}
-
-Once = DataOnce
-
-# 并行模式
-THREAD_MODE = "thread"  # 默认模式，
-
-PROCESS_MODE = "process"  # 当前不可用
+print(DynamicFoobarModel.schema())
