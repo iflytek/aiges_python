@@ -122,7 +122,7 @@ class Meta(BaseModel):
     version: str = Field()
     sub: str = Field()
     call: str = Field()
-    call_type: str = Field()
+    call_type: int = Field()
     webgate_type: int = Field()
     hosts: str = Field()
     route: str = Field()

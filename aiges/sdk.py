@@ -25,8 +25,7 @@ import queue
 from threading import Lock
 from multiprocessing import Process
 from aiges.schema.aischema import *
-from aiges.gradio_util.component import GradioComponent
-import gradio as gr
+
 from pydantic import Field as PField
 from pydantic.fields import FieldInfo
 from pydantic import ConstrainedStr, ConstrainedInt, StrictStr, StrictInt, conint, constr
@@ -197,6 +196,9 @@ class StringBodyField(PayloadField):
     def __init__(self, key, value=b" ", need_base64=False, encoding="utf8", format="plain", compress="raw", status=3):
         super(StringBodyField, self).__init__(key, STRING)
         if not isinstance(value, bytes):
+            log.error("type String Body value: %s" % type(value))
+            if isinstance(value, str):
+                log.error("values is :%s" % value)
             raise Exception("StringBodyField value must be bytes String...")
         self.value = value
         self.data_type = STRING
@@ -217,12 +219,16 @@ class StringBodyField(PayloadField):
 
 
 class AudioBodyField(PayloadField):
-    def __init__(self, key, path="", encoding="", format="plain", compress="raw", status=3):
+    def __init__(self, key, path="", encoding="raw", format="plain", compress="raw", status=3):
         super(AudioBodyField, self).__init__(key, AUDIO)
         self.data_type = AUDIO
         self.path = self._check_path(path)
         self.key = key
         self.audio = b" "
+        self.encoding = encoding
+        self.status = status
+        self.compress = compress
+        self.format = format
 
     @property
     def test_value(self):
@@ -443,6 +449,8 @@ class WrapperBase(metaclass=Metaclass):
         self._schema = None
 
     def gradio(self):
+        from aiges.gradio_util.component import GradioComponent
+        import gradio as gr
         if self._schema:
             g = GradioComponent(self._schema)
             g.run()
@@ -574,12 +582,12 @@ class WrapperBase(metaclass=Metaclass):
             if inp.data_type == IMAGE:
                 inputs_fields.update({inp.key: {"dataType": "image"}})
                 self.inputs_test_values.update({inp.key: inp.test_value})
-                i = ImageField(encoding=inp.encoding, status=inp.status, image=inp.image)
+                i = ImageField(encoding=inp.encoding, status=inp.status, image=b"test")
                 inputs_payloads.update({inp.key: i})
             elif inp.data_type == AUDIO:
                 inputs_fields.update({inp.key: {"dataType": "audio"}})
                 self.inputs_test_values.update({inp.key: inp.test_value})
-                i = AudioField(encoding=inp.encoding, status=inp.status, audio=inp.audio)
+                i = AudioField(encoding=inp.encoding, status=inp.status, audio=b"test")
                 inputs_payloads.update({inp.key: i})
             elif inp.data_type == STRING:
                 inputs_fields.update({inp.key: {"dataType": "text"}})
@@ -633,7 +641,7 @@ class WrapperBase(metaclass=Metaclass):
 
     def _parse_mapping(self):
         call = self.__mappings__.get("call", "atmos")
-        call_type = self.__mappings__.get("call_type", "0")
+        call_type = self.__mappings__.get("call_type", 0)
         route = self.__mappings__.get("route", "/{}/private/{}".format(self.version, self.serviceId))
         sub = self.__mappings__.get("sub", "ase")
         hosts = self.__mappings__.get("hosts", "api.xf-yun.com")
@@ -664,8 +672,50 @@ class WrapperBase(metaclass=Metaclass):
             self.params_test_values.update()
             self.params_test_values[param.key] = param.test_value
         return params_fields, required_params
-
     def _parse_params_v2(self, serviceId, accepets_payloads):
+        params = self.__mappings__.get('params', [])
+        a_dict = {}
+        _dict = {}
+        for param in params:
+            if isinstance(param, StringParamField):
+                if param.required:
+                    _dict[param.key] = (str, PField(default="cc", title='Foo', max_length=10, min_length=0))
+                else:
+                    _dict[param.key] = (Optional[str], PField(title='Foo', max_length=10, min_length=0))
+            elif isinstance(param, NumberParamField):
+                if param.required:
+                    _dict[param.key] = (int, PField(title=param.title, gt=param.minimum, le=param.maximum))
+                else:
+                    _dict[param.key] = (Optional[int], PField(title=param.title, gt=param.minimum, le=param.maximum))
+            elif isinstance(param, BooleanParamField):
+                if param.required:
+                    _dict[param.key] = (bool, PField(title=param.title, default=param.default))
+                else:
+                    _dict[param.key] = (Optional[bool], PField(title=param.title, default=param.default))
+
+            # if param.required:
+            #     # todo param required should do here
+            #     _dict[param.key] = param.test_value
+            # else:
+            #     _dict[param.key] = param.test_value
+
+
+
+        # 这里是处理 accept parameters expect
+        for k, v in accepets_payloads.items():
+            _dict[k] = v
+
+        TmpModel = create_model("TempModel", __base__=BaseModel, **_dict)
+        a_dict[serviceId] = TmpModel()
+
+        Paramodel = create_model(
+            'Paramodel',
+            __base__=BaseModel,
+            **a_dict,
+        )
+        return Paramodel
+
+    def _parse_params_v2_old(self, serviceId, accepets_payloads):
         params = self.__mappings__.get('params', [])
 
         _dict = {}
@@ -908,7 +958,7 @@ class WrapperBase(metaclass=Metaclass):
         保留接口
     '''
 
-    def wrapperCreate(cls, params: {}, sid: str) -> SessionCreateResponse:
+    def wrapperCreate(cls, params: {}, sid: str, userTag: str = "") -> SessionCreateResponse:
         print(params)
 
         print(sid)
@@ -1044,4 +1094,3 @@ class WrapperBase(metaclass=Metaclass):
                 if i.status == DataEnd:
                     print("end!!!!")
                     is_stopping = True
-

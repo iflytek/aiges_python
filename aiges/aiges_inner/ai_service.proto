@@ -1,0 +1,15 @@
+syntax = "proto3";
+package protocol;
+import "protocol/ai.proto";
+
+service WrapperService {
+  rpc wrapperInit(InitRequest) returns (Ret) {}
+  rpc wrapperOnceExec(Request) returns (Response) {}
+  rpc wrapperSchema(SvcId) returns (Schema) {}
+  rpc testStream(stream StreamRequest) returns (stream Response) {}
+  //
+  // Accepts a stream of RouteNotes sent while a route is being traversed,
+  // while receiving other RouteNotes (e.g. from other users).
+  rpc communicate(stream Request) returns (stream Response) {}
+
+}

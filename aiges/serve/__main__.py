@@ -40,7 +40,7 @@ from io import StringIO
 from logging.handlers import QueueHandler, QueueListener
 # from queue import Queue
 from multiprocessing import Queue
-
+import multiprocessing
 import grpc
 from aiges.aiges_inner import aiges_inner_pb2
 from aiges.aiges_inner import aiges_inner_pb2_grpc
@@ -51,8 +51,10 @@ from aiges.errors import *
 from aiges.utils.log import getLogger
 from grpc_health.v1 import health_pb2, health_pb2_grpc
 from grpc_health.v1.health import HealthServicer
+from aiges.utils.log import getFileLogger
 
-log = getLogger(fmt=" %(name)s:%(funcName)s:%(lineno)s - %(levelname)s:  %(message)s", name="wrapper")
+# log = getLogger(fmt=" %(name)s:%(funcName)s:%(lineno)s - %(levelname)s:  %(message)s", name="wrapper")
+log = getFileLogger(fmt=" %(name)s:%(funcName)s:%(lineno)s - %(levelname)s:  %(message)s", name="wrapper")
 wrapper_module = "wrapper"
 wrapper_class = "Wrapper"
 
@@ -140,19 +142,43 @@ class WrapperServiceServicer(aiges_inner_pb2_grpc.WrapperServiceServicer):
     def wrapperSchema(self, request, context):
         log.info("Entering warpperSchema ...")
         if not self.userWrapperObject:
-            return aiges_inner_pb2.Response(ret=USER_EXEC_ERROR)
+            return aiges_inner_pb2.Schema(data=None)
         schame = self.userWrapperObject.schema()
         return aiges_inner_pb2.Schema(data=schame)
+
+    def wrapperCreate(self, request, context):
+        log.debug("entering create")
+        if not self.userWrapperObject:
+            return aiges_inner_pb2.Handle(err_code=USER_EXEC_ERROR)
+        handle = self.userWrapperObject.wrapperCreate(request.params, sid=request.sid, userTag=request.tag)
+        log.debug("gen handle %s" % handle)
+        return aiges_inner_pb2.Handle(handle=handle.handle,err_code = handle.error_code)
+
+    def wrapperWrite(self, request, context):
+        log.debug("entering write")
+        if not self.userWrapperObject:
+            return aiges_inner_pb2.Ret(ret=USER_EXEC_ERROR)
+        log.debug("query handle %s" % request.handle)
+        ret = self.userWrapperObject.wrapperWrite(request.handle, self.convertPbReq2Req(request.req), request.sid)
+        return aiges_inner_pb2.Ret(ret=ret)
+        pass
 
     def convertPbReq2Req(self, req):
         r = DataListCls()
         r.list = req.list
         return r
 
+    def wrapperDestroy(self, request, context):
+        log.debug("entering destroy")
+        if not self.userWrapperObject:
+            return aiges_inner_pb2.Response(ret=USER_EXEC_ERROR)
+        log.debug("destroy handle %s" % request.handle)
+        ret = self.userWrapperObject.wrapperDestroy(request.handle)
+        return aiges_inner_pb2.Ret(ret=ret)
+
     def testStream(self, request_iterator, context):
         prev_notes = []
         for new_note in request_iterator:
-            print(new_note.data)
             yield aiges_inner_pb2.Response(list=[])
             prev_notes.append(new_note)
 
@@ -160,6 +186,7 @@ class WrapperServiceServicer(aiges_inner_pb2_grpc.WrapperServiceServicer):
         # 这里无需双向似乎，如有必要，需要在加载器中传入相关信息
         while True:
             data = self.response_queue.get()
+            log.debug("getting response, %s" % str(data))
             yield data
 
 
@@ -180,7 +207,11 @@ def send_to_queue(q):
 
 
 def serve():
-    work_q = Queue()
+    _PROCESS_COUNT = multiprocessing.cpu_count()
+    _THREAD_CONCURRENCY = _PROCESS_COUNT
+    response_q = Queue()
+    from aiges.callback import set_up
+    set_up(response_q)
     # w = threading.Thread(target=send_to_queue, args=(work_q,))
     # w.start()
 
@@ -188,9 +219,10 @@ def serve():
     health = HealthServicer()
     health.set("plugin", health_pb2.HealthCheckResponse.ServingStatus.Value('SERVING'))
     # Start the server.
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    log.info(f"starting workers: {_PROCESS_COUNT}")
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=_THREAD_CONCURRENCY))
     aiges_inner_pb2_grpc.add_WrapperServiceServicer_to_server(
-        WrapperServiceServicer(work_q), server)
+        WrapperServiceServicer(response_q), server)
     # add stdio service
     # 这里没有必要，因为go-plugin似乎已经捕捉了 标准输出
     # grpc_stdio_pb2_grpc.add_GRPCStdioServicer_to_server(StdioService(logger), server)

@@ -41,6 +41,7 @@ class DataListNode:
     def __init__(self):
         self.key: AnyStr = ''
         self.data: AnyStr = ''
+        self.status = Once
         self.len = 0
         self.type = DataText
 

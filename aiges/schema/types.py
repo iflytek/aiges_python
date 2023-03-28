@@ -59,8 +59,9 @@ class ImageEncoding(str, Enum):
 
 
 class AudioEncoding(str, Enum):
-    h264 = "h.264"
-
+    pcm = "pcm"
+    raw = "raw"
+    mp3 = "mp3"
 
 class Compress(str, Enum):
     raw = "raw"

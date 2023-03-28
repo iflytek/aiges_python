@@ -60,7 +60,8 @@ def getLogger(fmt=fmt, level=level, name="root"):
     return log
 
 
-def getFileLogger(fmt=fmt, level=level, name="python_wrapper"):
+def getFileLogger(fmt=fmt, level=level, name="wrapper"):
+    global logpath
     pt = sys.platform
     if pt.lower() == "darwin":
         logpath = "/tmp/log/app"

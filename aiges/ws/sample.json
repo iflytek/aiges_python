@@ -1,0 +1,37 @@
+{
+  "header": {
+    "appid": "111",
+    "device_id": null,
+    "imei": null,
+    "imsi": null,
+    "mac": null,
+    "net_isp": null,
+    "net_type": null,
+    "res_id": null,
+    "status": 1,
+    "uid": null
+  },
+  "parameter": {
+    "mmocr": {
+          "api_key": "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",
+
+      "response": {
+        "compress": "raw",
+        "data_type": "text",
+        "encoding": "utf8",
+        "format": "plain",
+        "status": 1
+      }
+    }
+  },
+  "payload": {
+    "message": {
+      "compress": "raw",
+      "data_type": "text",
+      "encoding": "utf8",
+      "format": "plain",
+      "status": 1,
+      "text": "5L2g5piv6LCB5ZGA"
+    }
+  }
+}
