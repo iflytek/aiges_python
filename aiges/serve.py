@@ -24,7 +24,7 @@
                   ┃┫┫  ┃┫┫
                   ┗┻┛  ┗┻┛
 """
-
+import contextlib
 import datetime
 import importlib
 import logging
@@ -40,7 +40,16 @@ from io import StringIO
 from logging.handlers import QueueHandler, QueueListener
 # from queue import Queue
 from multiprocessing import Queue
-import multiprocessing
+
+if sys.platform.startswith("darwin"):
+    # import multiprocess as multiprocessing
+    import multiprocessing
+
+else:
+    import multiprocessing
+import socket
+import argparse
+
 import grpc
 from aiges.aiges_inner import aiges_inner_pb2
 from aiges.aiges_inner import aiges_inner_pb2_grpc
@@ -152,7 +161,7 @@ class WrapperServiceServicer(aiges_inner_pb2_grpc.WrapperServiceServicer):
             return aiges_inner_pb2.Handle(err_code=USER_EXEC_ERROR)
         handle = self.userWrapperObject.wrapperCreate(request.params, sid=request.sid, userTag=request.tag)
         log.debug("gen handle %s" % handle)
-        return aiges_inner_pb2.Handle(handle=handle.handle,err_code = handle.error_code)
+        return aiges_inner_pb2.Handle(handle=handle.handle, err_code=handle.error_code)
 
     def wrapperWrite(self, request, context):
         log.debug("entering write")
@@ -238,10 +247,94 @@ def serve():
     server.wait_for_termination()
 
 
-def run():
+@contextlib.contextmanager
+def _reserve_port(port=50055):
+    """Find and reserve a port for all subprocesses to use"""
+    sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    if sock.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT) == 0:
+        raise RuntimeError("Failed to set SO_REUSEPORT.")
+    sock.bind(('', port))
+    try:
+        yield sock.getsockname()[1]
+    finally:
+        sock.close()
+
+
+def run_server(bind_address):
+    response_q = Queue()
+    from aiges.callback import set_up
+    set_up(response_q)
+    # We need to build a health service to work with go-plugin
+    health = HealthServicer()
+    health.set("plugin", health_pb2.HealthCheckResponse.ServingStatus.Value('SERVING'))
+
+    server = grpc.server(
+        futures.ThreadPoolExecutor(max_workers=1),
+        options=(('grpc.so_reuseport', 1),)
+
+        # options=[
+        #     # ("grpc.max_send_message_length", -1),
+        #     # ("grpc.max_receive_message_length", -1),
+        #     ("grpc.so_reuseport", 1),
+        #     # ("grpc.use_local_subchannel_pool", 1),
+        # ],
+    )
+    aiges_inner_pb2_grpc.add_WrapperServiceServicer_to_server(
+        WrapperServiceServicer(response_q), server)
+
+    # add stdio service
+    # 这里没有必要，因为go-plugin似乎已经捕捉了 标准输出
+    # grpc_stdio_pb2_grpc.add_GRPCStdioServicer_to_server(StdioService(logger), server)
+    #
+    health_pb2_grpc.add_HealthServicer_to_server(health, server)
+
+    server.add_insecure_port(bind_address)
+    server.start()
+    server.wait_for_termination()
+
+
+def get_parser():
+    parser = argparse.ArgumentParser(description="Aiges ArgsPare")
+    parser.add_argument('-w', dest="workers_nums", default=2, type=int)
+    parser.add_argument('-c', dest="concurrent", action="store_true")
+
+    return parser
+
+
+def main():
+    """
+    Inspired from https://github.com/grpc/grpc/blob/master/examples/python/multiprocessing/server.py
+    """
+    # multiprocessing.set_start_method('spawn', force=True)
+
+    parser = get_parser()
+    opts = parser.parse_args()
+    if not opts.concurrent:
+        run_old()
+    else:
+        workers_nums = opts.workers_nums
+        with _reserve_port() as port:
+            bind_address = f"[::]:{port}"
+
+            workers = []
+            # log.info(f"starting workers: {workers_nums}")
+
+            for _ in range(workers_nums):
+                worker = multiprocessing.Process(target=run_server, args=(bind_address,))
+                worker.start()
+                workers.append(worker)
+            # Output information
+            print(f"1|1|tcp|127.0.0.1:{port}|grpc")
+            sys.stdout.flush()
+            for worker in workers:
+                worker.join()
+
+
+def run_old():
     logging.basicConfig()
     serve()
 
 
 if __name__ == '__main__':
-    run()
+    main()

@@ -89,7 +89,7 @@ def run():
     # NOTE(gRPC Python Team): .close() is possible on a channel and should be
     # used in circumstances in which the with statement does not fit the needs
     # of the code.
-    with grpc.insecure_channel('localhost:50053') as channel:
+    with grpc.insecure_channel('localhost:50056') as channel:
         stub = aiges_inner_pb2_grpc.WrapperServiceStub(channel)
         print("-------------- InitConfig --------------")
         init(stub)
