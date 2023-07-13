@@ -111,7 +111,7 @@ class Wrapper(WrapperBase):
         self.session.init_handle_pool("thread", 10, MyReqDataThread)
         return 0
 
-    def wrapperOnceExec(cls, params: {}, reqData: DataListCls) -> Response:
+    def wrapperOnceExec(cls, params: {}, reqData: DataListCls, usrTag: str = '') -> Response:
         """
         非会话模式计算接口,对应oneShot请求,可能存在并发调用
         @param params 功能参数
@@ -266,7 +266,7 @@ class MyReqDataThread(StreamHandleThread):
         r.list = [l]
         self.session_thread.callback_fn(r, self.session_thread.sid)
         if l.status == DataEnd:
-            self.session_thread.reset() #最后一帧数据后 释放会话
+            self.session_thread.reset()  # 最后一帧数据后 释放会话
         # self.out_q.put(r)
 
 

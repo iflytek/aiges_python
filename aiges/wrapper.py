@@ -112,7 +112,7 @@ class Wrapper(WrapperBase):
         ret:错误码。无错误码时返回0
     '''
 
-    def wrapperOnceExec(cls, params: {}, reqData: DataListCls) -> Response:
+    def wrapperOnceExec(cls, params: {}, reqData: DataListCls, usrTag: str = "")-> Response:
         log.info("got reqdata , %s" % reqData.list)
         #        print(type(reqData.list[0].data))
         #        print(type(reqData.list[0].data))
@@ -141,8 +141,7 @@ class Wrapper(WrapperBase):
         l.status = DataOnce
         d = open("test_data/test.png", "rb").read()
         d = b"cc"
-        l.len = len(d)
-        l.data = d
+        l.setData(d)
         l.type = 0
         r.list = [l, ]
         return r
@@ -168,15 +167,14 @@ class Wrapper(WrapperBase):
         l.key = "ccc"
         l.status = 1
         d = open("pybind11/docs/pybind11-logo.png", "r").read()
-        l.len = len(d)
-        l.data = d
+        l.setData(d)
         r.list = [l, l, l]
 
         print(r.list)
         print(444)
         return r
 
-    def wrapperCreate(self, params: {}, sid: str) -> SessionCreateResponse:
+    def wrapperCreate(cls, params: {}, sid: str, userTag: str = "") -> SessionCreateResponse:
         print(params)
         s = SessionCreateResponse()
         # 这里是取 handle
@@ -216,8 +214,7 @@ class Wrapper(WrapperBase):
         l.key = "ccc"
         l.status = 1
         d = b"cccccc"
-        l.len = len(d)
-        l.data = d
+        l.setData(d)
         r.list = [l]
         return r
 

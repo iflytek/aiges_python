@@ -672,6 +672,7 @@ class WrapperBase(metaclass=Metaclass):
             self.params_test_values.update()
             self.params_test_values[param.key] = param.test_value
         return params_fields, required_params
+
     def _parse_params_v2(self, serviceId, accepets_payloads):
         params = self.__mappings__.get('params', [])
         a_dict = {}
@@ -698,8 +699,6 @@ class WrapperBase(metaclass=Metaclass):
             #     _dict[param.key] = param.test_value
             # else:
             #     _dict[param.key] = param.test_value
-
-
 
         # 这里是处理 accept parameters expect
         for k, v in accepets_payloads.items():
@@ -941,7 +940,7 @@ class WrapperBase(metaclass=Metaclass):
         ret:错误码。无错误码时返回0
     '''
 
-    def wrapperOnceExec(cls, params: {}, reqData: DataListCls) -> Response:
+    def wrapperOnceExec(cls, params: {}, reqData: DataListCls, usrTag: str = "") -> Response:
         raise NotImplementedError(
             "Please Inplement Wrapper Class Method: wrapperOnceExec(cls, usrTag: str, params: {}, reqData: [], respData: [], psrIds: [], psrCnt: int) ")
 
