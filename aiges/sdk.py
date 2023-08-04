@@ -436,6 +436,9 @@ class Metaclass(type):
 
 class WrapperBase(metaclass=Metaclass):
     config = {}
+    requestCls = None
+
+    responseCls = None
 
     def __init__(self, legacy=True, is_aipaas=True, keep_schema_default_value=True):
         # 仅测试调试用
@@ -1013,6 +1016,26 @@ class WrapperBase(metaclass=Metaclass):
             log.error("response list keys must be u nique...")
             log.error("invalid keys %s" % str(keys))
             return False
+
+        # check status
+        for d in resp.list:
+            if d.status != Once:
+                log.error("ResponseData 's data field status is %d, not %d. Modify it " % (d.status, Once))
+                return False
+
+        # check output datatype match
+        accepts = {}
+        for k in self.__mappings__['accepts']:
+            accepts[k.key] = k.data_type
+        for d in resp.list:
+            if d.key not in accepts:
+                log.error("ResponseData 's data field key %s is not in expect, Please check UserResponse " % (d.key))
+                return False
+            if d.type != accepts[d.key]:
+                log.error(
+                    "ResponseData 's data field , key: %s, data_type %s is not in expect, Please check UserResponse " % (
+                    d.key, d.type))
+                return False
 
         return True
 

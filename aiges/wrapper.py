@@ -137,8 +137,8 @@ class Wrapper(WrapperBase):
         r = Response()
         # return r.response_err(100)
         l = ResponseData()
-        l.key = "ccc"
-        l.status = DataOnce
+        l.key = "boxes"
+        #l.status = DataOnce
         d = open("test_data/test.png", "rb").read()
         d = b"cc"
         l.setData(d)
