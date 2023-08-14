@@ -5,6 +5,7 @@ import sys
 
 import time
 import base64
+import sys
 
 #
 try:
@@ -450,6 +451,11 @@ class WrapperBase(metaclass=Metaclass):
         self.is_aipaas = is_aipaas
         self.keep_schema_default_value = keep_schema_default_value
         self._schema = None
+        self.printPythonInfo()
+
+    def printPythonInfo(self):
+        print("### Current Using Python: %s ### " % sys.executable)
+        print("### Current Python Version: %s ###" % sys.version)
 
     def gradio(self):
         from aiges.gradio_util.component import GradioComponent
@@ -1034,7 +1040,7 @@ class WrapperBase(metaclass=Metaclass):
             if d.type != accepts[d.key]:
                 log.error(
                     "ResponseData 's data field , key: %s, data_type %s is not in expect, Please check UserResponse " % (
-                    d.key, d.type))
+                        d.key, d.type))
                 return False
 
         return True

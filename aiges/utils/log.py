@@ -63,12 +63,10 @@ def getLogger(fmt=fmt, level=level, name="root"):
 def getFileLogger(fmt=fmt, level=level, name="wrapper"):
     global logpath
     pt = sys.platform
-    print('system platform: ', pt)
     if pt.lower() == "darwin":
         logpath = "/tmp/log/app"
     else:
         logpath = "./log/"
-
 
     log = logging.getLogger(name)
     if not os.path.isdir(logpath) or not os.path.exists(logpath):
@@ -82,4 +80,5 @@ def getFileLogger(fmt=fmt, level=level, name="wrapper"):
     for handler in log.handlers:
         log.removeHandler(handler)
     log.addHandler(ch)
+    log.info('system platform: %s' % str(pt))
     return log
