@@ -948,12 +948,16 @@ class WrapperBase(metaclass=Metaclass):
         reqDat
         ret:错误码。无错误码时返回0
     '''
+    def wrapperLoadRes(self, reqData: DataListCls, resId: int) -> int:
+        return 0
 
-    def wrapperOnceExec(cls, params: {}, reqData: DataListCls, usrTag: str = "") -> Response:
+    def wrapperUnloadRes(self, resId: int) -> int:
+        return 0
+    def wrapperOnceExec(cls, params: {}, reqData: DataListCls, usrTag: str = "", persId: int = 0) -> Response:
         raise NotImplementedError(
             "Please Inplement Wrapper Class Method: wrapperOnceExec(cls, usrTag: str, params: {}, reqData: [], respData: [], psrIds: [], psrCnt: int) ")
 
-    def wrapperOnceExecAsync(cls, params: {}, reqData: DataListCls, sid: str) -> Response:
+    def wrapperOnceExecAsync(cls, params: {}, reqData: DataListCls, sid: str, persId: int = 0) -> Response:
         raise NotImplementedError(
             "Please Inplement Wrapper Class Method: wrapperOnceExec(cls, usrTag: str, params: {}, reqData: [], respData: [], psrIds: [], psrCnt: int) ")
 
@@ -966,7 +970,7 @@ class WrapperBase(metaclass=Metaclass):
         保留接口
     '''
 
-    def wrapperCreate(cls, params: {}, sid: str, userTag: str = "") -> SessionCreateResponse:
+    def wrapperCreate(cls, params: {}, sid: str, userTag: str = "", persId: int = 0) -> SessionCreateResponse:
         print(params)
 
         print(sid)
