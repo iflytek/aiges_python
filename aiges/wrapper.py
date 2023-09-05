@@ -112,7 +112,7 @@ class Wrapper(WrapperBase):
         ret:错误码。无错误码时返回0
     '''
 
-    def wrapperOnceExec(cls, params: {}, reqData: DataListCls, usrTag: str = "")-> Response:
+    def wrapperOnceExec(cls, params: {}, reqData: DataListCls, usrTag: str = "", persId: int = 0)-> Response:
         log.info("got reqdata , %s" % reqData.list)
         #        print(type(reqData.list[0].data))
         #        print(type(reqData.list[0].data))
@@ -152,7 +152,11 @@ class Wrapper(WrapperBase):
     @return
         ret:错误码。无错误码时返回0
     '''
+    def wrapperLoadRes(self, reqData: DataListCls, resId: int) -> int:
+        return 0
 
+    def wrapperUnloadRes(self, resId: int) -> int:
+        return 0
     def wrapperFini(cls) -> int:
         return 0
 
@@ -174,7 +178,7 @@ class Wrapper(WrapperBase):
         print(444)
         return r
 
-    def wrapperCreate(cls, params: {}, sid: str, userTag: str = "") -> SessionCreateResponse:
+    def wrapperCreate(cls, params: {}, sid: str, userTag: str = "", persId: int = 0) -> SessionCreateResponse:
         print(params)
         s = SessionCreateResponse()
         # 这里是取 handle
