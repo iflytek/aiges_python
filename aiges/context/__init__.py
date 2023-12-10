@@ -4,7 +4,7 @@
 @author: nivic ybyang7
 @license: Apache Licence 
 @file: __init__.py
-@time: 2022/06/15
+@time: 2023/10/31
 @contact: ybyang7@iflytek.com
 @site:  
 @software: PyCharm 
@@ -30,4 +30,3 @@
 #  Etiam sed turpis ac ipsum condimentum fringilla. Maecenas magna.
 #  Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
 #  Vestibulum commodo. Ut rhoncus gravida arcu.
-EXIT_SIG = -1

@@ -20,6 +20,7 @@ from aiges.sdk import WrapperBase, \
     ImageBodyField, \
     StringBodyField
 from aiges.utils.log import log
+from aiges.core.types import *
 
 ########
 # 请在此区域导入您的依赖库
@@ -51,7 +52,7 @@ class UserRequest(object):
     input1 = ImageBodyField(key="data", path="test_data/test.png")
     input3 = ImageBodyField(key="data2", path="test_data/test.png")
     # stringbodyfiled 指明 value，用于本地调试时的测试值
-    input2 = StringBodyField(key="switch", value="ctrl")
+    input2 = StringBodyField(key="switch", value=b"ctrl")
 
 
 '''
@@ -66,8 +67,8 @@ class UserResponse(object):
     # 此类定义响应返回数据段，请务必指明对应key
     # 支持 ImageBodyField， AudioBodyField,  StringBodyField
     # 如果响应是json， 请使用StringBodyField
-    accept1 = StringBodyField(key="boxes")
-    accept2 = StringBodyField(key="boxes2")
+    accept1 = ImageBodyField(key="result")
+    #accept2 = ImageBodyField(key="boxes2")
 
 
 '''
@@ -96,15 +97,21 @@ class Wrapper(WrapperBase):
         log.info("Initializing ...")
         return 0
 
+    def wrapperLoadRes(self, reqData: DataListCls, resId: int) -> int:
+        return 0
+
+    def wrapperUnloadRes(self, resId: int) -> int:
+        return 0
+
     '''
     非会话模式计算接口,对应oneShot请求,可能存在并发调用
     @param params 功能参数
     @param  reqData     请求数据实体字段 DataListCls,可通过 aiges.dto.DataListCls查看
-    @return 
+    @return
         响应必须返回 Response类，非Response类将会引起未知错误
     '''
 
-    def wrapperOnceExec(cls, params: {}, reqData: DataListCls) -> Response:
+    def  wrapperOnceExec(self, params: {}, reqData: DataListCls, usrTag: str = "", persId: int = 0) -> Response:
         log.info("got reqdata , %s" % reqData.list)
         #        print(type(reqData.list[0].data))
         #        print(type(reqData.list[0].data))
@@ -130,13 +137,12 @@ class Wrapper(WrapperBase):
         # 错误处理
         # return r.response_err(100)
         l = ResponseData()
-        l.key = "ccc"
-        l.status = 1
         d = open("test_data/test.png", "rb").read()
-        l.len = len(d)
-        l.data = d
-        l.type = 0
-        r.list = [l, l, l]
+        l.key = "result"
+        l.status = Once
+        l.setData(d)
+        l.setDataType(DataImage)
+        r.list = [l]
         return r
 
     '''

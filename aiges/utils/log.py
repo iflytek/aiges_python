@@ -66,7 +66,7 @@ def getFileLogger(fmt=fmt, level=level, name="wrapper"):
     if pt.lower() == "darwin":
         logpath = "/tmp/log/app"
     else:
-        logpath = "./log/"
+        logpath = logpath
 
     log = logging.getLogger(name)
     if not os.path.isdir(logpath) or not os.path.exists(logpath):

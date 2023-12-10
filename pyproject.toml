@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aiges"
-version = "0.9.1"
+version = "0.15.0"
 description = "A module for test aiges's python wrapper.py"
 authors = ["maybaby <ybyang7@iflytek.com>"]
 license = "Apache License Version 2.0"
@@ -13,11 +13,16 @@ grpcio = ">=1.50.0"
 grpcio-tools = ">=1.50.0"
 plumbum = ">=1.7.0"
 flask_restx = ">=1.0.0"
+Flask = "==2.2.5"
 jsonref = ">=1.0.0"
 pydantic = "==1.10.2"
 gradio = ">=3.0"
 [tool.poetry.dev-dependencies]
 jinja2 = ">=2.0"
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+[[tool.poetry.source]]
+name = "my-custom-repo"  # This name will be used in the configuration to retreive the proper credentials
+url = "https://repo.model.xfyun.cn/api/packages/administrator/pypi"  # URL used to download your packages from

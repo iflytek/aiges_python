@@ -4,7 +4,7 @@
 @author: nivic ybyang7
 @license: Apache Licence
 @file: server
-@time: 2022/10/28
+@time: 2023/3/28
 @contact: ybyang7@iflytek.com
 @site:
 @software: PyCharm
@@ -142,7 +142,7 @@ class WrapperServiceServicer(aiges_inner_pb2_grpc.WrapperServiceServicer):
             return aiges_inner_pb2.Response(ret=USER_EXEC_ERROR)
         d_list = []
         for ur in user_resp.list:
-            d = aiges_inner_pb2.ResponseData(key=ur.key, data=ur.data, type=ur.type, len=ur.len, status=ur.status)
+            d = aiges_inner_pb2.ResponseData(key=ur.key, data=ur.data, len=ur.len, status=ur.status)
             d_list.append(d)
         r = aiges_inner_pb2.Response(list=d_list, tag=request.tag)
         call_back(self.response_queue, r)
@@ -210,7 +210,7 @@ def send_to_queue(q):
         time.sleep(1)
         # print("sending... {}".format(x))
         msg = "count: {} . now : {}".format(x, datetime.datetime.now())
-        d = aiges_inner_pb2.ResponseData(key=str(x),type=0, data=msg.encode("utf-8"), len=x, status=3)
+        d = aiges_inner_pb2.ResponseData(key=str(x), data=msg.encode("utf-8"), len=x, status=3)
         r = aiges_inner_pb2.Response(list=[d])
         # q.put(r)
 

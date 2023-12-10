@@ -957,7 +957,7 @@ class WrapperBase(metaclass=Metaclass):
         raise NotImplementedError(
             "Please Inplement Wrapper Class Method: wrapperOnceExec(cls, usrTag: str, params: {}, reqData: [], respData: [], psrIds: [], psrCnt: int) ")
 
-    def wrapperOnceExecAsync(cls, params: {}, reqData: DataListCls, sid: str, persId: int = 0) -> Response:
+    def wrapperOnceExecAsync(cls, params: {}, reqData: DataListCls, sid: str, persId: int = 0) -> int:
         raise NotImplementedError(
             "Please Inplement Wrapper Class Method: wrapperOnceExec(cls, usrTag: str, params: {}, reqData: [], respData: [], psrIds: [], psrCnt: int) ")
 
