@@ -29,7 +29,6 @@ from aiges.schema.aischema import *
 
 from pydantic import Field as PField
 from pydantic.fields import FieldInfo
-from pydantic import ConstrainedStr, ConstrainedInt, StrictStr, StrictInt, conint, constr
 
 SUB = "ase"
 CALL = "atmos"
@@ -516,19 +515,21 @@ class WrapperBase(metaclass=Metaclass):
         SchemaInputModel = create_model(
             'SchemaInputModel',
             **sin,
-            __base__=BaseModel
+            __config__=ConfigDict(ignored_types=(PayloadModel, Header, ParamModel))
         )
         _sin = SchemaInputModel()
 
         # 2. preprare output palyoad
         OutputPayloadModel = create_model(
             'OutputPayloadModel',
-            __base__=BaseModel,
-            **accepts_payloads
+            **accepts_payloads,
+            __config__=ConfigDict(ignored_types=(TextField, ImageField, AudioField))
+
         )
         _output_payload = {"payload": OutputPayloadModel()}
         OutputModel = create_model("OutputModel",
-                                   __base__=BaseModel, **_output_payload)
+                                    **_output_payload,
+                                   __config__=ConfigDict(ignored_types=(OutputPayloadModel,)))
 
         # return  _sin.schema_json()
         sc = AIschema(meta=MetaModel(), schemainput=SchemaInputModel(), schemaoutput=OutputModel(),
@@ -650,11 +651,11 @@ class WrapperBase(metaclass=Metaclass):
 
     def _parse_mapping(self):
         call = self.__mappings__.get("call", "atmos")
-        call_type = self.__mappings__.get("call_type", 0)
+        call_type = self.__mappings__.get("call_type", "0")
         route = self.__mappings__.get("route", "/{}/private/{}".format(self.version, self.serviceId))
         sub = self.__mappings__.get("sub", "ase")
         hosts = self.__mappings__.get("hosts", "api.xf-yun.com")
-        webgate_type = self.__mappings__.get("webgate_type", 0)
+        webgate_type = self.__mappings__.get("webgate_type", "0")
         args = dict()
         args['serviceId'] = self.serviceId
         if self.legacy:
@@ -691,15 +692,16 @@ class WrapperBase(metaclass=Metaclass):
                 if param.required:
                     _dict[param.key] = (str, PField(default="cc", title='Foo', max_length=10, min_length=0))
                 else:
-                    _dict[param.key] = (Optional[str], PField(title='Foo', max_length=10, min_length=0))
+                    _dict[param.key] = (Optional[str], PField(title='Foo', max_length=10, min_length=0, default=""))
             elif isinstance(param, NumberParamField):
                 if param.required:
                     _dict[param.key] = (int, PField(title=param.title, gt=param.minimum, le=param.maximum))
                 else:
-                    _dict[param.key] = (Optional[int], PField(title=param.title, gt=param.minimum, le=param.maximum))
+                    _dict[param.key] = (
+                    Optional[int], PField(title=param.title, gt=param.minimum, le=param.maximum, default=0))
             elif isinstance(param, BooleanParamField):
                 if param.required:
-                    _dict[param.key] = (bool, PField(title=param.title, default=param.default))
+                    _dict[param.key] = (bool, PField(title=param.title))
                 else:
                     _dict[param.key] = (Optional[bool], PField(title=param.title, default=param.default))
 
@@ -713,13 +715,14 @@ class WrapperBase(metaclass=Metaclass):
         for k, v in accepets_payloads.items():
             _dict[k] = v
 
-        TmpModel = create_model("TempModel", __base__=BaseModel, **_dict)
+        TmpModel = create_model("TempModel", __config__=ConfigDict(ignored_types=(TextField, ImageField)), **_dict)
         a_dict[serviceId] = TmpModel()
 
         Paramodel = create_model(
             'Paramodel',
-            __base__=BaseModel,
             **a_dict,
+            __config__=ConfigDict(ignored_types=(TmpModel,))
+
         )
         return Paramodel
 
@@ -948,11 +951,13 @@ class WrapperBase(metaclass=Metaclass):
         reqDat
         ret:错误码。无错误码时返回0
     '''
+
     def wrapperLoadRes(self, reqData: DataListCls, resId: int) -> int:
         return 0
 
     def wrapperUnloadRes(self, resId: int) -> int:
         return 0
+
     def wrapperOnceExec(cls, params: {}, reqData: DataListCls, usrTag: str = "", persId: int = 0) -> Response:
         raise NotImplementedError(
             "Please Inplement Wrapper Class Method: wrapperOnceExec(cls, usrTag: str, params: {}, reqData: [], respData: [], psrIds: [], psrCnt: int) ")
@@ -970,7 +975,7 @@ class WrapperBase(metaclass=Metaclass):
         保留接口
     '''
 
-    def wrapperCreate(cls, params: {}, sid: str, userTag: str = "", persId: int = 0) -> SessionCreateResponse:
+    def wrapperCreate(cls, params: {}, sid: str, persId: int = 0, usrTag: str = "") -> SessionCreateResponse:
         print(params)
 
         print(sid)
@@ -980,14 +985,14 @@ class WrapperBase(metaclass=Metaclass):
         保留接口
     '''
 
-    def wrapperWrite(cls, handle: str, datas: [], sid: str) -> int:
+    def wrapperWrite(cls, handle: str, datas: []) -> int:
         return 0
 
     '''
         保留接口
     '''
 
-    def wrapperRead(cls, handle: str, sid: str) -> []:
+    def wrapperRead(cls, handle: str) -> []:
         return []
 
     def wrapperDestroy(cls, handle: str) -> int:

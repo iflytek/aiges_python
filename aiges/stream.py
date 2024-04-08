@@ -30,6 +30,7 @@
 #  Etiam sed turpis ac ipsum condimentum fringilla. Maecenas magna.
 #  Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
 #  Vestibulum commodo. Ut rhoncus gravida arcu.
+import multiprocessing
 import threading
 from threading import Lock
 from multiprocessing import Manager, Process
@@ -144,8 +145,8 @@ class ThreadPool(Pool):
     """
     简易线程pool， 用于记录handle 和thread 绑定关系
     """
-
     def __init__(self, reqDataThreadCls, processs_no=0, nums=10, ):
+        super(ThreadPool, self).__init__()
         self.workers = {}
         for i in range(0, nums):
             handle = "Process-{}-Thread-{}".format(str(processs_no), str(i))
@@ -155,6 +156,144 @@ class ThreadPool(Pool):
 
     def get_thread(self, handle):
         return self.workers.get(handle)
+
+
+
+class RequestPool():
+    def __init__(self, shared_req_queue, callback_fn):
+        self.pool = {}
+        self.conns_map = {}
+        self.shared_req_queue = shared_req_queue
+        self.init_threads(callback_fn=callback_fn, pool_size=5)
+
+    def init_threads(self, callback_fn, pool_size=5):
+        for thread_id in range(pool_size):
+            conn_l, conn_r = multiprocessing.Pipe()
+            self.process_id = os.getpid()
+            handle = "process-{}-thread-{}".format(str(self.process_id), str(thread_id))
+            t = ReqHandleThread(conn_l, self.shared_req_queue, handle, callback_fn=callback_fn)
+            self.conns_map[handle] = (conn_l, conn_r)
+            #
+            self.pool[handle] = t
+            t.start()
+
+    def get_idle_handle(self):
+        for k, v in self.pool.items():
+            if v.status == "idle":
+                v.set_busy()
+                return k
+        return None
+
+    def set_idle_handle(self, handle):
+        self.pool[handle].set_idle()
+
+    def get_thread(self, handle):
+        return self.pool[handle]
+
+
+class Context(object):
+    def __init__(self):
+        self.sid = ""
+        self.params = {}
+        self.data = None
+        self.session_destroyed = False
+        self.callback_handle = ""
+
+    def set_data(self, data):
+        self.data = data
+
+    def set_callback_handle(self,s):
+        self.callback_handle = s
+
+    def set_sid(self, sid):
+        self.sid = sid
+
+    def set_params(self, params):
+        self.params = params
+
+    def reset_ctx(self):
+        self.sid = ""
+        self.params = {}
+        self.data = None
+        self.callback_handle = ""
+        self.session_destroyed = False
+
+    def set_destroyed(self):
+        self.session_destroyed = True
+
+class ReqHandleThread(threading.Thread):
+    def __init__(self, model_pipe_conn, shared_req_queue, handle, callback_fn):
+        threading.Thread.__init__(self)
+        # model_pipe_conn 负责和模型推理线程/进程连接
+        self.model_pipe_conn = model_pipe_conn
+        #
+        self.input_queue = queue.Queue()
+        self.shared_req_queue = shared_req_queue
+        self.status = "idle"
+        #self.session_destroyed = False
+        self.is_stopping = False
+        self.handle = handle
+        # 回调给上层加载器
+        self.callback = callback_fn
+        self.ctx = Context()
+
+    def set_busy(self):
+        self.status = "busy"
+
+    def set_idle(self):
+        self.status = "idle"
+        self.ctx.reset_ctx()
+
+
+    def set_ctx(self, sid, params):
+        self.ctx.set_sid(sid)
+        self.ctx.set_params(params)
+
+    def send_to_input_queue(self, sid, req):
+        self.ctx.set_sid(sid)
+        self.ctx.set_data(req)
+        self.input_queue.put(self.ctx)
+
+    def run(self) -> None:
+        while not self.is_stopping:
+            # 阻塞获取
+            ctx = self.input_queue.get()
+            #self.session_destroyed = False
+            # 转发送入模型
+            self.shared_req_queue.put((self.handle, ctx))
+            #end_flag = self.model_pipe_conn.recv()  #
+            # 等待模型process 发送end表示
+            # 判断result是否最后一帧 todo
+            # self.callback(result, sid)
+
+    def destroy(self):
+        #self.session_destroyed = True
+        self.status = "idle"
+        self.ctx.reset_ctx()
+
+
+class ModelProcess(threading.Thread):
+    def __init__(self, shared_req_queue, result_conns_map, callback_fn):
+        threading.Thread.__init__(self)
+        self.shared_req_queue = shared_req_queue
+        self.result_conns_map = result_conns_map
+        self.is_stopping = False
+        self.callback = callback_fn
+
+    def run(self) -> None:
+        while not self.is_stopping:
+            handle, ctx = self.shared_req_queue.get()
+            log.info("starting infer %s"% handle)
+            if not ctx.session_destroyed:
+                self.infer(ctx, self.callback)
+            else:
+                log.warn(f"{handle} has destroyed , not to infer..")
+
+    def register_infer_func(self, func):
+        self.infer = func
+
+    def infer(self, ctx, callback):
+        raise NotImplementedError
 
 
 class StreamHandleThread(threading.Thread):

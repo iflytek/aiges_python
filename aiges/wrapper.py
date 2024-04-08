@@ -178,7 +178,7 @@ class Wrapper(WrapperBase):
         print(444)
         return r
 
-    def wrapperCreate(cls, params: {}, sid: str, userTag: str = "", persId: int = 0) -> SessionCreateResponse:
+    def wrapperCreate(self, params: {}, sid: str, userTag: str = "", persId: int = 0) -> SessionCreateResponse:
         print(params)
         s = SessionCreateResponse()
         # 这里是取 handle
@@ -198,8 +198,10 @@ class Wrapper(WrapperBase):
         s.error_code = 0
         return s
 
-    def wrapperWrite(self, handle: str, req: DataListCls, sid: str) -> int:
+    def wrapperWrite(self, handle: str, req: DataListCls) -> int:
         print("handle", handle)
+        sid = ""
+
         print("sid:", sid)
         print("req:", req)
         for i in req.list:
@@ -207,8 +209,10 @@ class Wrapper(WrapperBase):
             print(i.data)
         return 0
 
-    def wrapperRead(self, handle: str, sid: str) -> Response:
+    def wrapperRead(self, handle: str) -> Response:
         print("handle", handle)
+        sid = ""
+
         print("sid:", sid)
         _session = self.session.get_session(handle=handle)
         print("out.q", _session.out_q)
@@ -224,7 +228,7 @@ class Wrapper(WrapperBase):
 
 
 if __name__ == '__main__':
-    m = Wrapper(legacy=False, is_aipaas=True, keep_schema_default_value=False)
+    m = Wrapper(legacy=True, is_aipaas=True, keep_schema_default_value=False)
     c = m.schema()
     f = open("out.json", "w")
     c = json.loads(c)

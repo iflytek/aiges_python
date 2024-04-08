@@ -87,10 +87,10 @@ class StrParamField(BaseModel):
 
 
 class TextField(BaseModel):
-    encoding: TextEncoding = Field(..., alias="encoding")
-    compress: Compress = Field(..., alias="compress")
-    format: TextFormat = Field(..., alias="format")
-    status: DataStatus = Field(..., alias="status")
+    encoding: TextEncoding = Field(None, alias="encoding")
+    compress: Compress = Field(None, alias="compress")
+    format: TextFormat = Field(None, alias="format")
+    status: DataStatus = Field(None, alias="status")
     text: str = Field(None, min_length=1, max_length=10485760)
     data_type: Optional[str] = Field("text")
 

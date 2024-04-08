@@ -38,12 +38,13 @@ from flask_restx import Api, Resource, Namespace, Model, OrderedModel, fields, s
 from flask import Flask
 import jsonref
 from enum import Enum
-from pydantic import BaseModel, Field, create_model
-from typing import Optional, Dict
-from pydantic.fields import ModelField
+from pydantic import BaseModel, Field, create_model, ConfigDict
+from typing import Optional, Dict, List
+from pydantic.fields import FieldInfo as ModelField
 import pprint
 from aiges.schema.utils.schemaUtils import resolve_schema
 from aiges.schema.types import *
+
 
 class AIModel(BaseModel):
     class Config:
@@ -62,8 +63,8 @@ class AIModel(BaseModel):
             new_annotations[f_key] = f_annotation
 
         f_value = {"dataType": f_type}
-        new_fields[f_key] = ModelField.infer(name=f_key, value=f_value, annotation=f_annotation, class_validators=None,
-                                             config=cls.__config__)
+        new_fields[f_key] = ModelField(name=f_key, value=f_value, annotation=f_annotation, class_validators=None,
+                                       )
 
         cls.__fields__.update(new_fields)
         # cls.__annotations__.update(new_annotations)
@@ -75,8 +76,8 @@ class AIModel(BaseModel):
         if f_annotation:
             new_annotations[f_key] = f_annotation
         # cls.__setattr__(name=f_key, value=m)
-        new_fields[f_key] = ModelField.infer(name=f_key, value=m, annotation=f_annotation, class_validators=None,
-                                             config=cls.__config__)
+        new_fields[f_key] = ModelField(name=f_key, value=m, annotation=f_annotation, class_validators=None,
+                                       )
 
         cls.__fields__.update(new_fields)
 
@@ -90,6 +91,8 @@ class Accept(AIModel):
 
 
 class Meta(BaseModel):
+    model_config = ConfigDict(extra='ignore', ignored_types=(str, List, Dict))
+
     '''
     {
         "serviceId": "s6d69bb68",
@@ -122,40 +125,45 @@ class Meta(BaseModel):
     version: str = Field()
     sub: str = Field()
     call: str = Field()
-    call_type: int = Field()
-    webgate_type: int = Field()
+    call_type: str = Field()
+    webgate_type: str = Field()
     hosts: str = Field()
     route: str = Field()
 
 
 class Header(BaseModel):
+    model_config = ConfigDict(extra='ignore', ignored_types=(str,))
+
     appid: str
-    uid: Optional[str]
-    device_id: Optional[str]
-    imei: Optional[str]
-    imsi: Optional[str]
-    mac: Optional[str]
-    net_type: Optional[str]
-    net_isp: Optional[str]
+    uid: Optional[str] = None
+    device_id: Optional[str] = None
+    imei: Optional[str] = None
+    imsi: Optional[str] = None
+    mac: Optional[str] = None
+    net_type: Optional[str] = None
+    net_isp: Optional[str] = None
     status: int
-    res_id: Optional[str]
+    res_id: Optional[str] = None
 
 
 class SvcParameter(BaseModel):
+    model_config = ConfigDict(extra='ignore', ignored_types=(str,))
+
     key1: str
     key2: str
 
 
 class Parameter(AIModel):
-    pass
-
+    model_config = ConfigDict(extra='ignore', ignored_types=(str,))
 
 
 class Payload(AIModel):
-    pass
+    model_config = ConfigDict(extra='ignore', ignored_types=(str,TextField, ImageField, AudioField))
 
 
 class SchemaInput(BaseModel):
+    model_config = ConfigDict(extra='ignore', ignored_types=(str,))
+
     header: Header = Field(None, alias="header")
     parameter: Parameter = Field(None, alias="parameter")
     payload: Payload = Field(None, alias="payload")
@@ -176,11 +184,15 @@ class SchemaInput(BaseModel):
 
 
 class SchemaOutput(BaseModel):
+    model_config = ConfigDict(extra='ignore', ignored_types=(str,))
+
     def __int__(self):
         pass
 
 
 class AIschema():
+    model_config = ConfigDict(extra='ignore', ignored_types=(str,))
+
     def __init__(self, meta, schemainput, schemaoutput, is_aipaas=False, keep_default=True):
         self.meta = meta
         self.schemaoutput = schemaoutput
@@ -219,6 +231,8 @@ class AIschema():
 
 
 if __name__ == '__main__':
+    from typing import ClassVar
+
     MAX_TRIES = 100
     # schema = SchemaInput.schema()
     # for i in range(MAX_TRIES):
@@ -228,7 +242,7 @@ if __name__ == '__main__':
     #
     # del schema['definitions']
     s = SchemaInput.schema_json()
-    dd = SchemaInput(header=Header(status=1, appid="c'c"))
+    dd = SchemaInput(header=Header(status=1, appid="cdc"))
     ss = json.loads(s)
     schema = jsonref.loads(s)
 
@@ -237,6 +251,7 @@ if __name__ == '__main__':
     MetaModel = create_model(
         'MetaModel',
         __base__=Meta,
+
         **d,
     )
     new_fields: Dict[str, ModelField] = {}
@@ -251,8 +266,8 @@ if __name__ == '__main__':
     accept = Accept()
     v = {"accept": accept, "input": parameter}
 
-    new_fields[fname] = ModelField.infer(name=fname, value=v, annotation=None, class_validators=None,
-                                         config=MetaModel.__config__)
+    new_fields[fname] = ModelField(name=fname, value=v, annotation=None, class_validators=None,
+                                   )
     MetaModel.__fields__.update(new_fields)
 
     a = MetaModel(serviceId="cc", sub="ccd", call="0", call_type="aipaas", webgate_type="c", hosts="ccdd", route="v1",
@@ -272,12 +287,12 @@ if __name__ == '__main__':
     SchemaInputModel = create_model(
         'SchemaInputModel',
         **pdd,
-        __base__=BaseModel
+        __config__= ConfigDict(extra='ignore', ignored_types=(PayloadModel,Header, Parameter))
     )
     sin = SchemaInputModel()
 
     sc = AIschema(meta=a, schemainput=SchemaInputModel, schemaoutput=SchemaOutput())
-    #print(json.dumps(sc.json(), indent=4))
+    # print(json.dumps(sc.json(), indent=4))
 
     t = TextField(text=b" ").schema_json()
-    #print(t)
+    # print(t)
