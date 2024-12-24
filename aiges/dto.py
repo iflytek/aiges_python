@@ -48,7 +48,7 @@ class DataListNode:
 
 class DataListCls:
     def __init__(self):
-        self.list: List[DataListNode]
+        self.list: List[DataListNode]=[]
 
     def get(self, key: str):
         for d in self.list:
